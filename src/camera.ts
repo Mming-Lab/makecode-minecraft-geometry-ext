@@ -292,6 +292,7 @@ namespace Camera {
     export function setcolors(color: number): number {
         return color;
     }
+    
 
     //% group="Camera Presets"
     //% block="First-person view"
@@ -317,8 +318,10 @@ namespace Camera {
         player.execute(cmd);
     }
 
+
     //% group="Input Control"
-    //% block="Player movement %enabled=toggleEnabledDisabled"
+    //% block="Player movement %enabled"
+    //% enabled.shadow=toggleOnOff
     //% weight=730
     export function SetMovement(enabled: boolean): void {
         const state = enabled ? "enabled" : "disabled";
@@ -327,7 +330,8 @@ namespace Camera {
     }
 
     //% group="Input Control"
-    //% block="Camera control %enabled=toggleEnabledDisabled"
+    //% block="Camera control %enabled"
+    //% enabled.shadow=toggleOnOff
     //% weight=720
     export function SetCameraControl(enabled: boolean): void {
         const state = enabled ? "enabled" : "disabled";

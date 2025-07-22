@@ -9,10 +9,12 @@ namespace shapes {
  */
     //% weight=8
     //% blockId=minecraftPlaceVariableBezierCurve
-    //% block="place $blockType blocks in variable bezier curve from $startPoint to $endPoint with control points $controlPoints"
+    //% block="place %block=minecraftBlock blocks in variable bezier curve from $startPoint to $endPoint with control points $controlPoints"
+    //% block.shadow=minecraftBlock
+    //% blockExternalInputs=1
     //% startPoint.shadow=minecraftCreateWorldInternal
     //% endPoint.shadow=minecraftCreateWorldInternal
-    export function PlaceVariableBezierCurve(startPoint: Position, controlPoints: Position[], endPoint: Position, blockType: number): void {
+    export function PlaceVariableBezierCurve(startPoint: Position, controlPoints: Position[], endPoint: Position, block: number): void {
         // 全制御点を結合（開始 + 制御点配列 + 終了）
         const 全制御点: Position[] = [startPoint];
         for (let i = 0; i < controlPoints.length; i++) {
@@ -51,7 +53,7 @@ namespace shapes {
 
         // 効率的なブロック配置アルゴリズム
         let 前回位置 = ベジェ計算(0);
-        blocks.place(blockType, 前回位置);
+        blocks.place(block, 前回位置);
 
         let t = 0;
         const ステップ幅 = 0.01; // 適度なステップサイズ
@@ -64,11 +66,11 @@ namespace shapes {
 
             // 座標が変わった場合のみブロック配置
             if (!positions.equals(前回位置, 次位置)) {
-                blocks.place(blockType, 次位置);
+                blocks.place(block, 次位置);
                 前回位置 = 次位置;
             }
 
             if (t >= 1.0) break;
         }
     }
- }
+}
