@@ -10,6 +10,7 @@
         "main.ts",
         "README.md",
         "src/camera.ts",
+        "src/Easing.jres",
         "src/RotatingPosition.ts",
         "src/VariableBezier.ts",
         "src/numericBlock.ts",
