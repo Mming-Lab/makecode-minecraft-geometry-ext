@@ -8,7 +8,13 @@
     "files": [
         "main.blocks",
         "main.ts",
-        "README.md"
+        "README.md",
+        "src/camera.ts",
+        "src/RotatingPosition.ts",
+        "src/VariableBezier.ts",
+        "src/numericBlock.ts",
+        "_locales/ja/makecode-minecraft-mming-Ext-strings.json",
+        "_locales/ja/makecode-minecraft-mming-Ext-jsdoc-strings.json"
     ],
     "testFiles": [
         "test.ts"
