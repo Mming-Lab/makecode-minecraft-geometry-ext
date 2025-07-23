@@ -24,6 +24,24 @@
     "agent.inspectNumericBlock|block": "エージェントの%directionの数値ブロックを調査",
     "{id:group}Numeric Block": "数値ブロック",
     "positions.RotateCoordinate|block": "座標 $targetCoordinates を、座標 $origin を中心にとして軸 $axisOfRevolution 周りに $angle 度回転させる",
-    "shapes.PlaceVariableBezierCurve|block": "AAAAplace $blockType blocks in variable bezier curve from $startPoint to $endPoint with control points $controlPoints"
-    "shapes.PlaceVariableBezierCurveA|block": "このブロックで曲線を作成： $blockType=minecraftBlock 開始 $startPoint 終了 $endPoint 制御点配列 $controlPoints"
+    "shapes.PlaceVariableBezierCurve|block": "このブロックで曲線を作成： $blockType=minecraftBlock 開始 $startPoint 終了 $endPoint 制御点配列 $controlPoints",
+    "shapes.createCylinder|block": "円柱を作成 %block=minecraftBlock 中心 $center 半径 $radius 高さ $height || 中空 $hollow",
+    "shapes.createCone|block": "円錐を作成 %block=minecraftBlock 中心 $center 半径 $radius 高さ $height || 中空 $hollow",
+    "shapes.createTorus|block": "トーラス（ドーナツ）を作成 %block=minecraftBlock 中心 $center 主半径 $majorRadius 副半径 $minorRadius || 中空 $hollow",
+    "shapes.createEllipsoid|block": "楕円体を作成 %block=minecraftBlock 中心 $center X半径 $radiusX Y半径 $radiusY Z半径 $radiusZ || 中空 $hollow",
+    "shapes.createHelix|block": "螺旋を作成 %block=minecraftBlock 中心 $center 半径 $radius 高さ $height 回転数 $turns || 時計回り $clockwise",
+    "shapes.createParaboloid|block": "パラボロイドを作成 %block=minecraftBlock 中心 $center 半径 $radius 高さ $height || 中空 $hollow",
+    "shapes.createHyperboloid|block": "双曲面を作成 %block=minecraftBlock 中心 $center 底面半径 $baseRadius くびれ半径 $waistRadius 高さ $height || 中空 $hollow",
+    "coordinates.getVariableBezierCurvePositions|block": "可変ベジェ曲線の座標を取得 開始 $startPoint 終了 $endPoint 制御点配列 $controlPoints",
+    "coordinates.getCylinderPositions|block": "円柱の座標を取得 中心 $center 半径 $radius 高さ $height || 中空 $hollow",
+    "coordinates.getConePositions|block": "円錐の座標を取得 中心 $center 半径 $radius 高さ $height || 中空 $hollow",
+    "coordinates.getTorusPositions|block": "トーラスの座標を取得 中心 $center 主半径 $majorRadius 副半径 $minorRadius || 中空 $hollow",
+    "coordinates.getEllipsoidPositions|block": "楕円体の座標を取得 中心 $center X半径 $radiusX Y半径 $radiusY Z半径 $radiusZ || 中空 $hollow",
+    "coordinates.getHelixPositions|block": "螺旋の座標を取得 中心 $center 半径 $radius 高さ $height 回転数 $turns || 時計回り $clockwise",
+    "coordinates.getParaboloidPositions|block": "パラボロイドの座標を取得 中心 $center 半径 $radius 高さ $height || 中空 $hollow",
+    "coordinates.getHyperboloidPositions|block": "双曲面の座標を取得 中心 $center 底面半径 $baseRadius くびれ半径 $waistRadius 高さ $height || 中空 $hollow",
+    "coordinates.getLinePositions|block": "線の座標を取得 開始 $p0 終了 $p1",
+    "coordinates.getCirclePositions|block": "円の座標を取得 中心 $center 半径 $radius 向き $orientation || 中空 $hollow",
+    "coordinates.getSpherePositions|block": "球の座標を取得 中心 $center 半径 $radius || 中空 $hollow",
+    "coordinates.getCuboidPositions|block": "直方体の座標を取得 角1 $corner1 角2 $corner2 || 中空 $hollow"
 }

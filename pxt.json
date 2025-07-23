@@ -12,8 +12,9 @@
         "src/camera.ts",
         "src/Easing.jres",
         "src/RotatingPosition.ts",
-        "src/VariableBezier.ts",
         "src/numericBlock.ts",
+        "src/shapesExt.ts",
+        "src/coordinates.ts",
         "_locales/ja/makecode-minecraft-mming-Ext-strings.json",
         "_locales/ja/makecode-minecraft-mming-Ext-jsdoc-strings.json"
     ],
