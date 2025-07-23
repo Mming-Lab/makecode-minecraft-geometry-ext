@@ -439,14 +439,14 @@ namespace coordinates {
     //% clockwise.shadow=toggleOnOff clockwise.defl=true
     //% expandableArgumentMode="toggle"
     export function getHelixPositions(center: Position, radius: number, height: number, turns: number, clockwise: boolean = true): Position[] {
-        const positions: Position[] = [];
+        const positionsArr: Position[] = [];
         const centerX = Math.round(center.getValue(Axis.X));
         const centerY = Math.round(center.getValue(Axis.Y));
         const centerZ = Math.round(center.getValue(Axis.Z));
 
         const radiusInt = Math.round(radius);
         const heightInt = Math.round(height);
-        const totalAngle = turns * 2 * Math.PI; // 総回転角度（ラジアン）
+        const totalAngle = turns * 2 * 3.14159; // 総回転角度（ラジアン）
         const direction = clockwise ? 1 : -1; // 回転方向
 
         // 螺旋の滑らかさを決定するステップ数（高さに比例）
@@ -469,12 +469,12 @@ namespace coordinates {
 
             // 重複座標を避ける（効率化）
             if (!previousPosition || !positions.equals(previousPosition, currentPosition)) {
-                positions.push(currentPosition);
+                positionsArr.push(currentPosition);
                 previousPosition = currentPosition;
             }
         }
 
-        return positions;
+        return positionsArr;
     }
 
     /**
