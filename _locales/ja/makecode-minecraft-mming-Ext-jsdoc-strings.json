@@ -65,7 +65,7 @@
     "shapes.PlaceVariableBezierCurve|param|startPoint": "曲線の開始位置",
     "shapes.PlaceVariableBezierCurve|param|controlPoints": "曲線の形状に影響する制御点の配列",
     "shapes.PlaceVariableBezierCurve|param|endPoint": "曲線の終了位置",
-    "shapes.PlaceVariableBezierCurve|param|blockType": "配置するブロックの種類",
+    "shapes.PlaceVariableBezierCurve|param|block": "配置するブロックの種類",
     "shapes.createCylinder": "円柱（シリンダー）を作成してブロックを配置します",
     "shapes.createCylinder|param|center": "円柱の底面の中心位置",
     "shapes.createCylinder|param|radius": "円柱の半径",
