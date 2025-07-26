@@ -33,7 +33,7 @@
     "shapes.createParaboloid|block": "パラボロイドを作成 %block=minecraftBlock 中心 $center 半径 $radius 高さ $height || 中空 $hollow",
     "shapes.createHyperboloid|block": "双曲面を作成 %block=minecraftBlock 中心 $center 底面半径 $baseRadius くびれ半径 $waistRadius 高さ $height || 中空 $hollow",
     "coordinates.getVariableBezierCurvePositions|block": "可変ベジェ曲線の座標を取得 開始 $startPoint 終了 $endPoint 制御点配列 $controlPoints",
-    "coordinates.getCylinderPositions|block": "円柱の座標を取得 中心 $center 半径 $radius 高さ $height || 中空 $hollow",
+    "coordinates.getCylinderPositions|block": "円柱の座標を取得 中心 $center 半径 $radius 高さ $height || 中空 $hollow 層数制限 $layers",
     "coordinates.getConePositions|block": "円錐の座標を取得 中心 $center 半径 $radius 高さ $height || 中空 $hollow",
     "coordinates.getTorusPositions|block": "トーラスの座標を取得 中心 $center 主半径 $majorRadius 副半径 $minorRadius || 中空 $hollow",
     "coordinates.getEllipsoidPositions|block": "楕円体の座標を取得 中心 $center X半径 $radiusX Y半径 $radiusY Z半径 $radiusZ || 中空 $hollow",
@@ -42,6 +42,9 @@
     "coordinates.getHyperboloidPositions|block": "双曲面の座標を取得 中心 $center 底面半径 $baseRadius くびれ半径 $waistRadius 高さ $height || 中空 $hollow",
     "coordinates.getLinePositions|block": "線の座標を取得 開始 $p0 終了 $p1",
     "coordinates.getCirclePositions|block": "円の座標を取得 中心 $center 半径 $radius 向き $orientation || 中空 $hollow",
-    "coordinates.getSpherePositions|block": "球の座標を取得 中心 $center 半径 $radius || 中空 $hollow",
-    "coordinates.getCuboidPositions|block": "直方体の座標を取得 角1 $corner1 角2 $corner2 || 中空 $hollow"
+    "coordinates.getSpherePositions|block": "球の座標を取得 中心 $center 半径 $radius || 中空 $hollow 密度 $density",
+    "coordinates.getCuboidPositions|block": "直方体の座標を取得 角1 $corner1 角2 $corner2 || 中空 $hollow",
+    "coordinates.normalizeCoordinate|block": "座標を正規化 $coord",
+    "coordinates.validateCoordinates|block": "座標を検証 X $x Y $y Z $z",
+    "coordinates.safeWorld|block": "安全な座標作成 X $x Y $y Z $z"
 }

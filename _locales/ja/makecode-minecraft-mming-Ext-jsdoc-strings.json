@@ -120,6 +120,7 @@
     "coordinates.getCylinderPositions|param|radius": "円柱の半径",
     "coordinates.getCylinderPositions|param|height": "円柱の高さ",
     "coordinates.getCylinderPositions|param|hollow": "中空の円柱を作成するかどうか（デフォルト：false）",
+    "coordinates.getCylinderPositions|param|layers": "生成する層数の上限（0=全層、デフォルト：0）",
     "coordinates.getConePositions": "円錐（コーン）の座標配列を計算します",
     "coordinates.getConePositions|param|center": "円錐の底面の中心位置",
     "coordinates.getConePositions|param|radius": "円錐の底面の半径",
@@ -165,8 +166,19 @@
     "coordinates.getSpherePositions|param|center": "球の中心位置",
     "coordinates.getSpherePositions|param|radius": "球の半径",
     "coordinates.getSpherePositions|param|hollow": "中空の球（殻のみ）を作成するかどうか",
+    "coordinates.getSpherePositions|param|density": "座標サンプリングの密度係数（0.1-1.0、デフォルト：1.0）",
     "coordinates.getCuboidPositions": "直方体の座標配列を計算します",
     "coordinates.getCuboidPositions|param|corner1": "直方体の最初の角の位置",
     "coordinates.getCuboidPositions|param|corner2": "直方体の対角の位置",
-    "coordinates.getCuboidPositions|param|hollow": "中空の直方体（殻のみ）を作成するかどうか"
+    "coordinates.getCuboidPositions|param|hollow": "中空の直方体（殻のみ）を作成するかどうか",
+    "coordinates.normalizeCoordinate": "座標を整数化し、有効範囲内にクランプします",
+    "coordinates.normalizeCoordinate|param|coord": "正規化する座標値",
+    "coordinates.validateCoordinates": "座標がMinecraft世界境界内にあるかチェックします",
+    "coordinates.validateCoordinates|param|x": "X座標",
+    "coordinates.validateCoordinates|param|y": "Y座標",
+    "coordinates.validateCoordinates|param|z": "Z座標",
+    "coordinates.safeWorld": "検証済みの安全な座標でPositionを作成します",
+    "coordinates.safeWorld|param|x": "X座標",
+    "coordinates.safeWorld|param|y": "Y座標",
+    "coordinates.safeWorld|param|z": "Z座標"
 }
