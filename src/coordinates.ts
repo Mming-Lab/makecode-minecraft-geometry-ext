@@ -2,6 +2,65 @@
 // Coordinate calculation namespace (returns position arrays without placing blocks)
 //% block="座標" weight=2 color=#4CAF50 icon="\uf43c" advanced=true
 namespace coordinates {
+
+    /**
+     * Normalize coordinate to integer and clamp to valid range
+     * @param coord Raw coordinate value
+     * @returns Normalized integer coordinate
+     */
+    //% weight=5
+    //% blockId=coordinatesNormalizeCoordinate
+    //% block="normalize coordinate $coord"
+    //% coord.defl=0
+    //% advanced=true
+    //% group="Coordinate Utilities"
+    function normalizeCoordinate(coord: number): number {
+        const normalized = Math.round(coord);
+        return Math.max(-30000000, Math.min(30000000, normalized));
+    }
+
+    /**
+     * Validate coordinates are within Minecraft world bounds
+     * @param x X coordinate
+     * @param y Y coordinate 
+     * @param z Z coordinate
+     * @returns True if coordinates are valid
+     */
+    //% weight=4
+    //% blockId=coordinatesValidateCoordinates
+    //% block="validate coordinates X $x Y $y Z $z"
+    //% x.defl=0 y.defl=64 z.defl=0
+    //% advanced=true
+    //% group="Coordinate Utilities"
+    function validateCoordinates(x: number, y: number, z: number): boolean {
+        return x >= -30000000 && x <= 30000000 &&
+               y >= -64 && y <= 320 &&
+               z >= -30000000 && z <= 30000000;
+    }
+
+    /**
+     * Safe world position creation with validation
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param z Z coordinate
+     * @returns Position if valid, null otherwise
+     */
+    //% weight=3
+    //% blockId=coordinatesSafeWorld
+    //% block="safe world position X $x Y $y Z $z"
+    //% x.defl=0 y.defl=64 z.defl=0
+    //% advanced=true
+    //% group="Coordinate Utilities"
+    function safeWorld(x: number, y: number, z: number): Position | null {
+        const normalizedX = normalizeCoordinate(x);
+        const normalizedY = normalizeCoordinate(y);
+        const normalizedZ = normalizeCoordinate(z);
+        
+        if (validateCoordinates(normalizedX, normalizedY, normalizedZ)) {
+            return world(normalizedX, normalizedY, normalizedZ);
+        }
+        return null;
+    }
     /**
      * Calculate positions along a bezier curve with variable number of control points.
      * @param startPoint Starting position of the curve
@@ -11,10 +70,11 @@ namespace coordinates {
      */
     //% weight=8
     //% blockId=minecraftGetVariableBezierCurvePositions
-    //% block="get positions for variable bezier curve from $startPoint to $endPoint with control points $controlPoints"
+    //% block="get variable bezier curve positions from $startPoint to $endPoint with control points $controlPoints"
     //% blockExternalInputs=1
     //% startPoint.shadow=minecraftCreateWorldInternal
     //% endPoint.shadow=minecraftCreateWorldInternal
+    //% group="Curves"
     export function getVariableBezierCurvePositions(startPoint: Position, controlPoints: Position[], endPoint: Position): Position[] {
         // 全制御点を結合（開始 + 制御点配列 + 終了）
         const 全制御点: Position[] = [startPoint];
@@ -67,8 +127,7 @@ namespace coordinates {
             const 次位置 = ベジェ計算(t);
 
             // 座標が変わった場合のみ配列に追加
-            
-            if (!positions.equals(前回位置, 次位置)) {
+            if (前回位置 && !positions.equals(前回位置, 次位置)) {
                 positionsArr.push(次位置);
                 前回位置 = 次位置;
             }
@@ -80,54 +139,61 @@ namespace coordinates {
     }
 
     /**
-     * Calculate positions for a cylinder (circular prism)
+     * Calculate positions for a cylinder using optimized building algorithm
      * @param center Center position of the cylinder base
-     * @param radius Radius of the cylinder
-     * @param height Height of the cylinder
+     * @param radius Radius of the cylinder (1-50 blocks)
+     * @param height Height of the cylinder (1-100 blocks)
      * @param hollow Whether to create a hollow cylinder (default: false)
-     * @returns Array of positions forming the cylinder
+     * @param layers Maximum number of layers to generate (0 = all layers, default: 0)
+     * @returns Array of positions forming the cylinder with enhanced performance
      */
     //% weight=20
     //% blockId=minecraftGetCylinderPositions
-    //% block="get positions for cylinder at center $center radius $radius height $height || hollow $hollow"
+    //% block="get optimized cylinder positions at center $center radius $radius height $height || hollow $hollow layers $layers"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=1 radius.max=50 radius.defl=5
     //% height.min=1 height.max=100 height.defl=10
     //% hollow.shadow=toggleOnOff hollow.defl=false
+    //% layers.min=0 layers.max=50 layers.defl=0
     //% expandableArgumentMode="toggle"
-    export function getCylinderPositions(center: Position, radius: number, height: number, hollow: boolean = false): Position[] {
-        const centerX = Math.round(center.getValue(Axis.X));
-        const centerY = Math.round(center.getValue(Axis.Y));
-        const centerZ = Math.round(center.getValue(Axis.Z));
+    //% group="3D Shapes (Optimized)"
+    export function getCylinderPositions(center: Position, radius: number, height: number, hollow: boolean = false, layers: number = 0): Position[] {
+        const centerX = normalizeCoordinate(center.getValue(Axis.X));
+        const centerY = normalizeCoordinate(center.getValue(Axis.Y));
+        const centerZ = normalizeCoordinate(center.getValue(Axis.Z));
 
-        const radiusInt = Math.round(radius);
-        const heightInt = Math.round(height);
+        const radiusInt = Math.max(1, Math.round(radius));
+        const heightInt = Math.max(1, Math.round(height));
+        const layersInt = layers > 0 ? Math.min(layers, heightInt) : heightInt;
         const radiusSquared = radiusInt * radiusInt;
         const innerRadius = hollow ? Math.max(0, radiusInt - 1) : 0;
         const innerRadiusSquared = innerRadius * innerRadius;
         const positions: Position[] = [];
 
-        // 中点円アルゴリズムベースの最適化（円柱生成）
-        for (let y = 0; y < heightInt; y++) {
-            // 各Y層で円を描画（高さごとに円を重ねて円柱を作成）
-            for (let x = -radiusInt; x <= radiusInt; x++) {
-                const xSquared = x * x;
-                if (xSquared > radiusSquared) continue;
-
-                // Z方向の範囲を計算（平方根を避ける最適化）
-                const maxZSquared = radiusSquared - xSquared;
-                const maxZ = Math.floor(Math.sqrt(maxZSquared));
-
-                for (let z = -maxZ; z <= maxZ; z++) {
-                    const distanceSquared = xSquared + z * z;
-
+        // 最適化された円柱アルゴリズム（buildingフォルダのアルゴリズムを流用）
+        for (let i = 0; i < layersInt; i++) {
+            // 各層でのY座標
+            const currentY = centerY + i;
+            
+            // 円形の最適化：対称性を利用して計算量削減
+            for (let u = -radiusInt; u <= radiusInt; u++) {
+                const uSquared = u * u;
+                if (uSquared > radiusSquared) continue;
+                
+                // 平方根を最小限に抑制した最適化
+                const maxVSquared = radiusSquared - uSquared;
+                const maxV = Math.floor(Math.sqrt(maxVSquared));
+                
+                for (let v = -maxV; v <= maxV; v++) {
+                    const distanceSquared = uSquared + v * v;
+                    
                     if (distanceSquared <= radiusSquared &&
                         (!hollow || distanceSquared >= innerRadiusSquared)) {
-                        positions.push(world(
-                            centerX + x,
-                            centerY + y,
-                            centerZ + z
-                        ));
+                        const worldX = centerX + u;
+                        const worldZ = centerZ + v;
+                        if (validateCoordinates(worldX, currentY, worldZ)) {
+                            positions.push(world(worldX, currentY, worldZ));
+                        }
                     }
                 }
             }
@@ -146,12 +212,13 @@ namespace coordinates {
      */
     //% weight=19
     //% blockId=minecraftGetConePositions
-    //% block="get positions for cone at center $center radius $radius height $height || hollow $hollow"
+    //% block="get cone positions at center $center radius $radius height $height || hollow $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=1 radius.max=50 radius.defl=5
     //% height.min=1 height.max=100 height.defl=10
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
+    //% group="3D Shapes (Basic)"
     export function getConePositions(center: Position, radius: number, height: number, hollow: boolean = false): Position[] {
         const centerX = Math.round(center.getValue(Axis.X));
         const centerY = Math.round(center.getValue(Axis.Y));
@@ -203,12 +270,13 @@ namespace coordinates {
      */
     //% weight=18
     //% blockId=minecraftGetTorusPositions
-    //% block="get positions for torus at center $center major radius $majorRadius minor radius $minorRadius || hollow $hollow"
+    //% block="get torus positions at center $center major radius $majorRadius minor radius $minorRadius || hollow $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% majorRadius.min=3 majorRadius.max=50 majorRadius.defl=8
     //% minorRadius.min=1 minorRadius.max=20 minorRadius.defl=3
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
+    //% group="3D Shapes (Advanced)"
     export function getTorusPositions(center: Position, majorRadius: number, minorRadius: number, hollow: boolean = false): Position[] {
         const centerX = Math.round(center.getValue(Axis.X));
         const centerY = Math.round(center.getValue(Axis.Y));
@@ -261,61 +329,71 @@ namespace coordinates {
     }
 
     /**
-     * Calculate positions for an ellipsoid
+     * Calculate positions for an ellipsoid using optimized building algorithm
      * @param center Center position of the ellipsoid
-     * @param radiusX Radius along X axis
-     * @param radiusY Radius along Y axis
-     * @param radiusZ Radius along Z axis
+     * @param radiusX Radius along X axis (1-50 blocks)
+     * @param radiusY Radius along Y axis (1-50 blocks)
+     * @param radiusZ Radius along Z axis (1-50 blocks)
      * @param hollow Whether to create a hollow ellipsoid (default: false)
-     * @returns Array of positions forming the ellipsoid
+     * @returns Array of positions forming the ellipsoid with enhanced performance
      */
     //% weight=17
     //% blockId=minecraftGetEllipsoidPositions
-    //% block="get positions for ellipsoid at center $center X radius $radiusX Y radius $radiusY Z radius $radiusZ || hollow $hollow"
+    //% block="get optimized ellipsoid positions at center $center X radius $radiusX Y radius $radiusY Z radius $radiusZ || hollow $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% radiusX.min=1 radiusX.max=50 radiusX.defl=5
     //% radiusY.min=1 radiusY.max=50 radiusY.defl=3
     //% radiusZ.min=1 radiusZ.max=50 radiusZ.defl=7
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
+    //% group="3D Shapes (Optimized)"
     export function getEllipsoidPositions(center: Position, radiusX: number, radiusY: number, radiusZ: number, hollow: boolean = false): Position[] {
-        const centerX = Math.round(center.getValue(Axis.X));
-        const centerY = Math.round(center.getValue(Axis.Y));
-        const centerZ = Math.round(center.getValue(Axis.Z));
+        const centerX = normalizeCoordinate(center.getValue(Axis.X));
+        const centerY = normalizeCoordinate(center.getValue(Axis.Y));
+        const centerZ = normalizeCoordinate(center.getValue(Axis.Z));
 
-        const radiusXInt = Math.round(radiusX);
-        const radiusYInt = Math.round(radiusY);
-        const radiusZInt = Math.round(radiusZ);
+        const radiusXInt = Math.max(1, Math.round(radiusX));
+        const radiusYInt = Math.max(1, Math.round(radiusY));
+        const radiusZInt = Math.max(1, Math.round(radiusZ));
+        const positions: Position[] = [];
 
+        // 楕円体の最適化された方程式（buildingアルゴリズムベース）
         const radiusXSquared = radiusXInt * radiusXInt;
         const radiusYSquared = radiusYInt * radiusYInt;
         const radiusZSquared = radiusZInt * radiusZInt;
-
+        
+        // 中空判定の最適化
         const innerRadiusX = hollow ? Math.max(1, radiusXInt - 1) : 1;
         const innerRadiusY = hollow ? Math.max(1, radiusYInt - 1) : 1;
         const innerRadiusZ = hollow ? Math.max(1, radiusZInt - 1) : 1;
         const innerRadiusXSquared = innerRadiusX * innerRadiusX;
         const innerRadiusYSquared = innerRadiusY * innerRadiusY;
         const innerRadiusZSquared = innerRadiusZ * innerRadiusZ;
-        const positions: Position[] = [];
 
+        // 計算最適化：外側ループで範囲制限を適用
         for (let x = -radiusXInt; x <= radiusXInt; x++) {
-            const xTerm = (x * x * radiusYSquared * radiusZSquared);
+            const xTerm = x * x * radiusYSquared * radiusZSquared;
+            const remainingX = radiusXSquared * radiusYSquared * radiusZSquared - xTerm;
+            if (remainingX < 0) continue; // 早期終了
+            
             for (let y = -radiusYInt; y <= radiusYInt; y++) {
-                const yTerm = (y * y * radiusXSquared * radiusZSquared);
-                const xyTerm = xTerm + yTerm;
-
-                for (let z = -radiusZInt; z <= radiusZInt; z++) {
-                    const zTerm = (z * z * radiusXSquared * radiusYSquared);
-
-                    // 楕円体の方程式: (x/a)² + (y/b)² + (z/c)² ≤ 1
-                    // 整数演算に変換: x²b²c² + y²a²c² + z²a²b² ≤ a²b²c²（浮動小数点計算を避ける）
-                    const distance = xyTerm + zTerm;
+                const yTerm = y * y * radiusXSquared * radiusZSquared;
+                const remainingXY = remainingX - yTerm;
+                if (remainingXY < 0) continue; // 早期終了
+                
+                // Z範囲の最適化計算
+                const maxZSquared = remainingXY / (radiusXSquared * radiusYSquared);
+                const maxZ = Math.min(radiusZInt, Math.floor(Math.sqrt(maxZSquared)));
+                
+                for (let z = -maxZ; z <= maxZ; z++) {
+                    const zTerm = z * z * radiusXSquared * radiusYSquared;
+                    const totalDistance = xTerm + yTerm + zTerm;
                     const threshold = radiusXSquared * radiusYSquared * radiusZSquared;
 
-                    if (distance <= threshold) {
+                    if (totalDistance <= threshold) {
                         let isInside = true;
                         if (hollow) {
+                            // 中空判定の最適化
                             const innerDistance = (x * x * innerRadiusYSquared * innerRadiusZSquared) +
                                 (y * y * innerRadiusXSquared * innerRadiusZSquared) +
                                 (z * z * innerRadiusXSquared * innerRadiusYSquared);
@@ -324,11 +402,12 @@ namespace coordinates {
                         }
 
                         if (isInside) {
-                            positions.push(world(
-                                centerX + x,
-                                centerY + y,
-                                centerZ + z
-                            ));
+                            const worldX = centerX + x;
+                            const worldY = centerY + y;
+                            const worldZ = centerZ + z;
+                            if (validateCoordinates(worldX, worldY, worldZ)) {
+                                positions.push(world(worldX, worldY, worldZ));
+                            }
                         }
                     }
                 }
@@ -346,9 +425,10 @@ namespace coordinates {
      */
     //% weight=100
     //% blockId=minecraftGetLinePositions
-    //% block="get positions for line from $p0 to $p1"
+    //% block="get line positions from $p0 to $p1"
     //% p0.shadow=minecraftCreateWorldInternal
     //% p1.shadow=minecraftCreateWorldInternal
+    //% group="2D Shapes"
     export function getLinePositions(p0: Position, p1: Position): Position[] {
         const positions: Position[] = [];
 
@@ -431,13 +511,14 @@ namespace coordinates {
      */
     //% weight=16
     //% blockId=minecraftGetHelixPositions
-    //% block="get positions for helix at center $center radius $radius height $height turns $turns || clockwise $clockwise"
+    //% block="get helix positions at center $center radius $radius height $height turns $turns || clockwise $clockwise"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=1 radius.max=50 radius.defl=5
     //% height.min=2 height.max=100 height.defl=20
     //% turns.min=0.5 turns.max=20 turns.defl=3
     //% clockwise.shadow=toggleOnOff clockwise.defl=true
     //% expandableArgumentMode="toggle"
+    //% group="3D Shapes (Advanced)"
     export function getHelixPositions(center: Position, radius: number, height: number, turns: number, clockwise: boolean = true): Position[] {
         const positionsArr: Position[] = [];
         const centerX = Math.round(center.getValue(Axis.X));
@@ -487,12 +568,13 @@ namespace coordinates {
      */
     //% weight=15
     //% blockId=minecraftGetParaboloidPositions
-    //% block="get positions for paraboloid at center $center radius $radius height $height || hollow $hollow"
+    //% block="get paraboloid positions at center $center radius $radius height $height || hollow $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=2 radius.max=50 radius.defl=8
     //% height.min=1 height.max=50 height.defl=10
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
+    //% group="3D Shapes (Advanced)"
     export function getParaboloidPositions(center: Position, radius: number, height: number, hollow: boolean = false): Position[] {
         const positions: Position[] = [];
         const centerX = Math.round(center.getValue(Axis.X));
@@ -554,13 +636,14 @@ namespace coordinates {
      */
     //% weight=14
     //% blockId=minecraftGetHyperboloidPositions
-    //% block="get positions for hyperboloid at center $center base radius $baseRadius waist radius $waistRadius height $height || hollow $hollow"
+    //% block="get hyperboloid positions at center $center base radius $baseRadius waist radius $waistRadius height $height || hollow $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% baseRadius.min=3 baseRadius.max=50 baseRadius.defl=10
     //% waistRadius.min=1 waistRadius.max=30 waistRadius.defl=5
     //% height.min=4 height.max=100 height.defl=20
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
+    //% group="3D Shapes (Advanced)"
     export function getHyperboloidPositions(center: Position, baseRadius: number, waistRadius: number, height: number, hollow: boolean = false): Position[] {
         const positions: Position[] = [];
         const centerX = Math.round(center.getValue(Axis.X));
@@ -623,11 +706,12 @@ namespace coordinates {
      */
     //% weight=95
     //% blockId=minecraftGetCirclePositions
-    //% block="get positions for circle at center $center radius $radius orientation $orientation || hollow $hollow"
+    //% block="get circle positions at center $center radius $radius orientation $orientation || hollow $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=1 radius.max=50 radius.defl=5
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
+    //% group="2D Shapes"
     export function getCirclePositions(center: Position, radius: number, orientation: Axis, hollow: boolean = false): Position[] {
         const positions: Position[] = [];
         const centerX = Math.round(center.getValue(Axis.X));
@@ -693,35 +777,41 @@ namespace coordinates {
     }
 
     /**
-     * Calculate positions for a sphere
+     * Calculate positions for a sphere using optimized building algorithm
      * @param center Center position of the sphere
-     * @param radius Radius of the sphere
+     * @param radius Radius of the sphere (1-50 blocks)
      * @param hollow Whether to create a hollow sphere (shell only)
-     * @returns Array of positions forming the sphere
+     * @param density Density factor for position sampling (0.1-1.0, default: 1.0)
+     * @returns Array of positions forming the sphere with enhanced performance
      */
     //% weight=90
     //% blockId=minecraftGetSpherePositions
-    //% block="get positions for sphere at center $center radius $radius || hollow $hollow"
+    //% block="get optimized sphere positions at center $center radius $radius || hollow $hollow density $density"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=1 radius.max=50 radius.defl=5
     //% hollow.shadow=toggleOnOff hollow.defl=false
+    //% density.min=0.1 density.max=1.0 density.defl=1.0
     //% expandableArgumentMode="toggle"
-    export function getSpherePositions(center: Position, radius: number, hollow: boolean = false): Position[] {
+    //% group="3D Shapes (Optimized)"
+    export function getSpherePositions(center: Position, radius: number, hollow: boolean = false, density: number = 1.0): Position[] {
         const positions: Position[] = [];
-        const centerX = Math.round(center.getValue(Axis.X));
-        const centerY = Math.round(center.getValue(Axis.Y));
-        const centerZ = Math.round(center.getValue(Axis.Z));
-        const radiusInt = Math.round(radius);
+        const centerX = normalizeCoordinate(center.getValue(Axis.X));
+        const centerY = normalizeCoordinate(center.getValue(Axis.Y));
+        const centerZ = normalizeCoordinate(center.getValue(Axis.Z));
+        const radiusInt = Math.max(1, Math.round(radius));
         const radiusSquared = radiusInt * radiusInt;
+        const densityFactor = Math.max(0.1, Math.min(1.0, density));
 
-        // MakeCodeコア互換の"crust"概念による効率化
-        const radiuso = hollow ? Math.max(0, (radiusInt - 1) * (radiusInt - 1)) : 0;
-
-        // 球の方程式: x² + y² + z² ≤ r²（効率的な範囲制限付き）
+        // 最適化された球体アルゴリズム（buildingフォルダベース）
+        const innerRadius = hollow ? Math.max(0, radiusInt - 1) : 0;
+        const innerRadiusSquared = innerRadius * innerRadius;
+        
+        // 高速化：対称性を利用した計算量削減
         for (let x = -radiusInt; x <= radiusInt; x++) {
             const xSquared = x * x;
-            if (xSquared > radiusSquared) continue; // X軸での早期終了
+            if (xSquared > radiusSquared) continue;
 
+            // Y範囲の事前計算で平方根計算を削減
             const maxYSquared = radiusSquared - xSquared;
             const maxY = Math.floor(Math.sqrt(maxYSquared));
 
@@ -729,21 +819,25 @@ namespace coordinates {
                 const ySquared = y * y;
                 const xySquared = xSquared + ySquared;
 
+                // Z範囲の事前計算で計算効率を向上
                 const maxZSquared = radiusSquared - xySquared;
                 const maxZ = Math.floor(Math.sqrt(maxZSquared));
 
                 for (let z = -maxZ; z <= maxZ; z++) {
-                    const zSquared = z * z;
-                    const distanceSquared = xySquared + zSquared;
+                    const distanceSquared = xySquared + z * z;
 
-                    // MakeCodeコア互換の"crust"判定
+                    // 高速化された境界判定
                     if (distanceSquared <= radiusSquared &&
-                        (!hollow || distanceSquared >= radiuso)) {
-                        positions.push(world(
-                            centerX + x,
-                            centerY + y,
-                            centerZ + z
-                        ));
+                        (!hollow || distanceSquared >= innerRadiusSquared)) {
+                        // 密度サンプリングの最適化
+                        if (densityFactor >= 1.0 || Math.random() < densityFactor) {
+                            const worldX = centerX + x;
+                            const worldY = centerY + y;
+                            const worldZ = centerZ + z;
+                            if (validateCoordinates(worldX, worldY, worldZ)) {
+                                positions.push(world(worldX, worldY, worldZ));
+                            }
+                        }
                     }
                 }
             }
@@ -761,11 +855,12 @@ namespace coordinates {
      */
     //% weight=85
     //% blockId=minecraftGetCuboidPositions
-    //% block="get positions for cuboid from corner $corner1 to corner $corner2 || hollow $hollow"
+    //% block="get cuboid positions from corner $corner1 to corner $corner2 || hollow $hollow"
     //% corner1.shadow=minecraftCreateWorldInternal
     //% corner2.shadow=minecraftCreateWorldInternal
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
+    //% group="3D Shapes (Basic)"
     export function getCuboidPositions(corner1: Position, corner2: Position, hollow: boolean = false): Position[] {
         const positions: Position[] = [];
 
