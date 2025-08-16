@@ -922,24 +922,40 @@ namespace coordinates {
     export function optimizedFill(positions: Position[], block: number): void {
         if (positions.length === 0) return;
 
-        const positionStrings = new Set<string>();
+        const positionStrings: string[] = [];
         
         for (const pos of positions) {
             const key = `${pos.getValue(Axis.X)},${pos.getValue(Axis.Y)},${pos.getValue(Axis.Z)}`;
-            positionStrings.add(key);
+            if (positionStrings.indexOf(key) === -1) {
+                positionStrings.push(key);
+            }
         }
 
-        const xs = [...new Set(positions.map(p => p.getValue(Axis.X)))].sort((a, b) => a - b);
-        const ys = [...new Set(positions.map(p => p.getValue(Axis.Y)))].sort((a, b) => a - b);
-        const zs = [...new Set(positions.map(p => p.getValue(Axis.Z)))].sort((a, b) => a - b);
+        // 重複排除用のヘルパー関数
+        function uniqueNumbers(arr: number[]): number[] {
+            const unique: number[] = [];
+            for (const item of arr) {
+                if (unique.indexOf(item) === -1) {
+                    unique.push(item);
+                }
+            }
+            return unique.sort((a, b) => a - b);
+        }
+
+        const xs = uniqueNumbers(positions.map(p => p.getValue(Axis.X)));
+        const ys = uniqueNumbers(positions.map(p => p.getValue(Axis.Y)));
+        const zs = uniqueNumbers(positions.map(p => p.getValue(Axis.Z)));
         
-        const remainingBlocks = new Set(positionStrings);
+        const remainingBlocks: string[] = [];
+        for (let i = 0; i < positionStrings.length; i++) {
+            remainingBlocks.push(positionStrings[i]);
+        }
         
         for (let x1 = 0; x1 < xs.length; x1++) {
             for (let y1 = 0; y1 < ys.length; y1++) {
                 for (let z1 = 0; z1 < zs.length; z1++) {
                     const startKey = `${xs[x1]},${ys[y1]},${zs[z1]}`;
-                    if (!remainingBlocks.has(startKey)) continue;
+                    if (remainingBlocks.indexOf(startKey) === -1) continue;
                     
                     let maxX = x1, maxY = y1, maxZ = z1;
                     
@@ -947,7 +963,7 @@ namespace coordinates {
                         let canExpand = true;
                         for (let y = y1; y <= maxY; y++) {
                             for (let z = z1; z <= maxZ; z++) {
-                                if (!remainingBlocks.has(`${xs[x2]},${ys[y]},${zs[z]}`)) {
+                                if (remainingBlocks.indexOf(`${xs[x2]},${ys[y]},${zs[z]}`) === -1) {
                                     canExpand = false;
                                     break;
                                 }
@@ -962,7 +978,7 @@ namespace coordinates {
                         let canExpand = true;
                         for (let x = x1; x <= maxX; x++) {
                             for (let z = z1; z <= maxZ; z++) {
-                                if (!remainingBlocks.has(`${xs[x]},${ys[y2]},${zs[z]}`)) {
+                                if (remainingBlocks.indexOf(`${xs[x]},${ys[y2]},${zs[z]}`) === -1) {
                                     canExpand = false;
                                     break;
                                 }
@@ -977,7 +993,7 @@ namespace coordinates {
                         let canExpand = true;
                         for (let x = x1; x <= maxX; x++) {
                             for (let y = y1; y <= maxY; y++) {
-                                if (!remainingBlocks.has(`${xs[x]},${ys[y]},${zs[z2]}`)) {
+                                if (remainingBlocks.indexOf(`${xs[x]},${ys[y]},${zs[z2]}`) === -1) {
                                     canExpand = false;
                                     break;
                                 }
@@ -995,7 +1011,11 @@ namespace coordinates {
                     for (let x = x1; x <= maxX; x++) {
                         for (let y = y1; y <= maxY; y++) {
                             for (let z = z1; z <= maxZ; z++) {
-                                remainingBlocks.delete(`${xs[x]},${ys[y]},${zs[z]}`);
+                                const keyToRemove = `${xs[x]},${ys[y]},${zs[z]}`;
+                                const index = remainingBlocks.indexOf(keyToRemove);
+                                if (index !== -1) {
+                                    remainingBlocks.splice(index, 1);
+                                }
                             }
                         }
                     }
