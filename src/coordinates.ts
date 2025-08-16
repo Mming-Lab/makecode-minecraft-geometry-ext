@@ -909,4 +909,99 @@ namespace coordinates {
         return positions;
     }
 
+    /**
+     * Optimized block placement using automatic rectangular region detection
+     * @param positions Array of positions to fill with blocks
+     * @param block Block type to place
+     */
+    //% weight=1
+    //% blockId=coordinatesOptimizedFill
+    //% block="optimized fill positions $positions with $block=minecraftBlock"
+    //% advanced=true
+    //% group="Block Optimization"
+    export function optimizedFill(positions: Position[], block: number): void {
+        if (positions.length === 0) return;
+
+        const positionStrings = new Set<string>();
+        
+        for (const pos of positions) {
+            const key = `${pos.getValue(Axis.X)},${pos.getValue(Axis.Y)},${pos.getValue(Axis.Z)}`;
+            positionStrings.add(key);
+        }
+
+        const xs = [...new Set(positions.map(p => p.getValue(Axis.X)))].sort((a, b) => a - b);
+        const ys = [...new Set(positions.map(p => p.getValue(Axis.Y)))].sort((a, b) => a - b);
+        const zs = [...new Set(positions.map(p => p.getValue(Axis.Z)))].sort((a, b) => a - b);
+        
+        const remainingBlocks = new Set(positionStrings);
+        
+        for (let x1 = 0; x1 < xs.length; x1++) {
+            for (let y1 = 0; y1 < ys.length; y1++) {
+                for (let z1 = 0; z1 < zs.length; z1++) {
+                    const startKey = `${xs[x1]},${ys[y1]},${zs[z1]}`;
+                    if (!remainingBlocks.has(startKey)) continue;
+                    
+                    let maxX = x1, maxY = y1, maxZ = z1;
+                    
+                    for (let x2 = x1; x2 < xs.length; x2++) {
+                        let canExpand = true;
+                        for (let y = y1; y <= maxY; y++) {
+                            for (let z = z1; z <= maxZ; z++) {
+                                if (!remainingBlocks.has(`${xs[x2]},${ys[y]},${zs[z]}`)) {
+                                    canExpand = false;
+                                    break;
+                                }
+                            }
+                            if (!canExpand) break;
+                        }
+                        if (canExpand) maxX = x2;
+                        else break;
+                    }
+                    
+                    for (let y2 = y1; y2 < ys.length; y2++) {
+                        let canExpand = true;
+                        for (let x = x1; x <= maxX; x++) {
+                            for (let z = z1; z <= maxZ; z++) {
+                                if (!remainingBlocks.has(`${xs[x]},${ys[y2]},${zs[z]}`)) {
+                                    canExpand = false;
+                                    break;
+                                }
+                            }
+                            if (!canExpand) break;
+                        }
+                        if (canExpand) maxY = y2;
+                        else break;
+                    }
+                    
+                    for (let z2 = z1; z2 < zs.length; z2++) {
+                        let canExpand = true;
+                        for (let x = x1; x <= maxX; x++) {
+                            for (let y = y1; y <= maxY; y++) {
+                                if (!remainingBlocks.has(`${xs[x]},${ys[y]},${zs[z2]}`)) {
+                                    canExpand = false;
+                                    break;
+                                }
+                            }
+                            if (!canExpand) break;
+                        }
+                        if (canExpand) maxZ = z2;
+                        else break;
+                    }
+                    
+                    const fromPos = world(xs[x1], ys[y1], zs[z1]);
+                    const toPos = world(xs[maxX], ys[maxY], zs[maxZ]);
+                    blocks.fill(block, fromPos, toPos);
+                    
+                    for (let x = x1; x <= maxX; x++) {
+                        for (let y = y1; y <= maxY; y++) {
+                            for (let z = z1; z <= maxZ; z++) {
+                                remainingBlocks.delete(`${xs[x]},${ys[y]},${zs[z]}`);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 }
