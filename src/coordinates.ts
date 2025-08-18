@@ -219,10 +219,6 @@ namespace coordinates {
 
         // MCP Server式レイヤー分割アルゴリズム（高効率）
         for (let i = 0; i < layersInt; i++) {
-            if (i % Math.floor(layersInt / 4) === 0 && i > 0) {
-                const progress = Math.round((i / layersInt) * 100);
-                player.say(`${progress}%`);
-            }
             const layerCenter = world(
                 center.getValue(Axis.X),
                 center.getValue(Axis.Y) + i,
@@ -400,16 +396,8 @@ namespace coordinates {
 
         // MCP Server式正規化距離計算（シンプルで高効率）
         const maxRadius = Math.max(Math.max(radiusXInt, radiusYInt), radiusZInt);
-        const minX = centerX - maxRadius;
-        const maxX = centerX + maxRadius;
-        const totalSteps = maxX - minX + 1;
         
-        for (let x = minX; x <= maxX; x++) {
-            const currentStep = x - minX + 1;
-            if (currentStep % Math.floor(totalSteps / 4) === 0) {
-                const progress = Math.round((currentStep / totalSteps) * 100);
-                player.say(`${progress}%`);
-            }
+        for (let x = centerX - maxRadius; x <= centerX + maxRadius; x++) {
             for (let y = centerY - maxRadius; y <= centerY + maxRadius; y++) {
                 for (let z = centerZ - maxRadius; z <= centerZ + maxRadius; z++) {
                     // 正規化距離計算（MCPサーバー方式）
@@ -831,11 +819,7 @@ namespace coordinates {
         const densityFactor = Math.max(0.1, Math.min(1.0, density));
 
         // MCP Server式球体アルゴリズム（最適化済み）
-        const minX = centerX - radiusInt;
-        const maxX = centerX + radiusInt;
-        const totalSteps = maxX - minX + 1;
-        
-        for (let x = minX; x <= maxX; x++) {
+        for (let x = centerX - radiusInt; x <= centerX + radiusInt; x++) {
             for (let y = centerY - radiusInt; y <= centerY + radiusInt; y++) {
                 for (let z = centerZ - radiusInt; z <= centerZ + radiusInt; z++) {
                     const distance = Math.sqrt(
@@ -955,10 +939,6 @@ namespace coordinates {
         
         player.say("重複除去中...");
         for (let i = 0; i < positions.length; i++) {
-            if (i % Math.floor(positions.length / 4) === 0 && i > 0) {
-                const progress = Math.round((i / positions.length) * 100);
-                player.say(`重複除去: ${progress}%`);
-            }
             const pos = positions[i];
             const key = `${pos.getValue(Axis.X)},${pos.getValue(Axis.Y)},${pos.getValue(Axis.Z)}`;
             if (seenKeys.indexOf(key) === -1) {
@@ -1011,10 +991,6 @@ namespace coordinates {
         // 貪欲アルゴリズムで最大直方体を検出
         player.say("最適化中...");
         for (let x1 = 0; x1 < xs.length; x1++) {
-            if (x1 % Math.floor(xs.length / 4) === 0 && x1 > 0) {
-                const progress = Math.round((x1 / xs.length) * 100);
-                player.say(`最適化: ${progress}%`);
-            }
             for (let y1 = 0; y1 < ys.length; y1++) {
                 for (let z1 = 0; z1 < zs.length; z1++) {
                     if (!blockExists[x1][y1][z1]) continue;
