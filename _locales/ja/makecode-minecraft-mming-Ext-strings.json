@@ -31,6 +31,8 @@
     "{id:group}Spheres and Ellipsoids": "球・楕円",
     "{id:group}Complex Shapes": "特殊図形",
     "{id:group}Lines and Curves": "線と曲線",
+    "{id:group}3D Shapes (Optimized)": "3D図形（高速版）",
+    "{id:group}3D Shapes (Basic)": "3D図形（基本版）",
     "{id:group}High-speed Building": "高速建築",
     "positions.RotateCoordinate|block": "座標 $targetCoordinates を、座標 $origin を中心にとして軸 $axisOfRevolution 周りに $angle 度回転させる",
     "shapes.variableBezier|block": "可変ベジェ %block=minecraftBlock 開始 $startPoint 終了 $endPoint 制御点 $controlPoints",
