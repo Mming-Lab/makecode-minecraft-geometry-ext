@@ -2,6 +2,8 @@
 // Coordinate calculation namespace (returns position arrays without placing blocks)
 //% block="座標" weight=2 color=#4CAF50 icon="\uf43c" advanced=true
 namespace coordinates {
+    // 進捗表示間隔（ブロック数）
+    const PROGRESS_INTERVAL = 1000;
 
     /**
      * Normalize coordinate to integer and clamp to valid range
@@ -203,8 +205,8 @@ namespace coordinates {
     //% blockId=minecraftGetCylinderPositions
     //% block="get optimized cylinder positions at center $center radius $radius height $height || hollow $hollow layers $layers"
     //% center.shadow=minecraftCreateWorldInternal
-    //% radius.min=1 radius.max=50 radius.defl=5
-    //% height.min=1 height.max=100 height.defl=10
+    //% radius.min=1 radius.max=200 radius.defl=5
+    //% height.min=1 height.max=300 height.defl=10
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% layers.min=0 layers.max=50 layers.defl=0
     //% expandableArgumentMode="toggle"
@@ -228,6 +230,9 @@ namespace coordinates {
             // MakeCode互換のスプレッド演算子代替
             for (const pos of circlePositions) {
                 positions.push(pos);
+                if (positions.length % PROGRESS_INTERVAL === 0) {
+                    player.say(`${positions.length}`);
+                }
             }
         }
 
@@ -246,8 +251,8 @@ namespace coordinates {
     //% blockId=minecraftGetConePositions
     //% block="get cone positions at center $center radius $radius height $height || hollow $hollow"
     //% center.shadow=minecraftCreateWorldInternal
-    //% radius.min=1 radius.max=50 radius.defl=5
-    //% height.min=1 height.max=100 height.defl=10
+    //% radius.min=1 radius.max=200 radius.defl=5
+    //% height.min=1 height.max=300 height.defl=10
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
     //% group="3D Shapes (Basic)"
@@ -304,8 +309,8 @@ namespace coordinates {
     //% blockId=minecraftGetTorusPositions
     //% block="get torus positions at center $center major radius $majorRadius minor radius $minorRadius || hollow $hollow"
     //% center.shadow=minecraftCreateWorldInternal
-    //% majorRadius.min=3 majorRadius.max=50 majorRadius.defl=8
-    //% minorRadius.min=1 minorRadius.max=20 minorRadius.defl=3
+    //% majorRadius.min=3 majorRadius.max=200 majorRadius.defl=8
+    //% minorRadius.min=1 minorRadius.max=100 minorRadius.defl=3
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
     //% group="3D Shapes (Advanced)"
@@ -373,9 +378,9 @@ namespace coordinates {
     //% blockId=minecraftGetEllipsoidPositions
     //% block="get optimized ellipsoid positions at center $center X radius $radiusX Y radius $radiusY Z radius $radiusZ || hollow $hollow"
     //% center.shadow=minecraftCreateWorldInternal
-    //% radiusX.min=1 radiusX.max=50 radiusX.defl=5
-    //% radiusY.min=1 radiusY.max=50 radiusY.defl=3
-    //% radiusZ.min=1 radiusZ.max=50 radiusZ.defl=7
+    //% radiusX.min=1 radiusX.max=200 radiusX.defl=5
+    //% radiusY.min=1 radiusY.max=200 radiusY.defl=3
+    //% radiusZ.min=1 radiusZ.max=200 radiusZ.defl=7
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
     //% group="3D Shapes (Optimized)"
@@ -391,7 +396,6 @@ namespace coordinates {
 
         // MCP Server式正規化距離計算（シンプルで高効率）
         const maxRadius = Math.max(Math.max(radiusXInt, radiusYInt), radiusZInt);
-        
         for (let x = centerX - maxRadius; x <= centerX + maxRadius; x++) {
             for (let y = centerY - maxRadius; y <= centerY + maxRadius; y++) {
                 for (let z = centerZ - maxRadius; z <= centerZ + maxRadius; z++) {
@@ -414,6 +418,9 @@ namespace coordinates {
                     
                     if (shouldPlace && validateCoordinates(x, y, z)) {
                         positions.push(world(x, y, z));
+                        if (positions.length % PROGRESS_INTERVAL === 0) {
+                            player.say(`${positions.length}`);
+                        }
                     }
                 }
             }
@@ -518,8 +525,8 @@ namespace coordinates {
     //% blockId=minecraftGetHelixPositions
     //% block="get helix positions at center $center radius $radius height $height turns $turns || clockwise $clockwise"
     //% center.shadow=minecraftCreateWorldInternal
-    //% radius.min=1 radius.max=50 radius.defl=5
-    //% height.min=2 height.max=100 height.defl=20
+    //% radius.min=1 radius.max=200 radius.defl=5
+    //% height.min=2 height.max=300 height.defl=20
     //% turns.min=0.5 turns.max=20 turns.defl=3
     //% clockwise.shadow=toggleOnOff clockwise.defl=true
     //% expandableArgumentMode="toggle"
@@ -578,8 +585,8 @@ namespace coordinates {
     //% blockId=minecraftGetParaboloidPositions
     //% block="get paraboloid positions at center $center radius $radius height $height || hollow $hollow"
     //% center.shadow=minecraftCreateWorldInternal
-    //% radius.min=2 radius.max=50 radius.defl=8
-    //% height.min=1 height.max=50 height.defl=10
+    //% radius.min=2 radius.max=200 radius.defl=8
+    //% height.min=1 height.max=300 height.defl=10
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
     //% group="3D Shapes (Advanced)"
@@ -646,9 +653,9 @@ namespace coordinates {
     //% blockId=minecraftGetHyperboloidPositions
     //% block="get hyperboloid positions at center $center base radius $baseRadius waist radius $waistRadius height $height || hollow $hollow"
     //% center.shadow=minecraftCreateWorldInternal
-    //% baseRadius.min=3 baseRadius.max=50 baseRadius.defl=10
-    //% waistRadius.min=1 waistRadius.max=30 waistRadius.defl=5
-    //% height.min=4 height.max=100 height.defl=20
+    //% baseRadius.min=3 baseRadius.max=200 baseRadius.defl=10
+    //% waistRadius.min=1 waistRadius.max=100 waistRadius.defl=5
+    //% height.min=4 height.max=300 height.defl=20
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
     //% group="3D Shapes (Advanced)"
@@ -716,7 +723,7 @@ namespace coordinates {
     //% blockId=minecraftGetCirclePositions
     //% block="get circle positions at center $center radius $radius orientation $orientation || hollow $hollow"
     //% center.shadow=minecraftCreateWorldInternal
-    //% radius.min=1 radius.max=50 radius.defl=5
+    //% radius.min=1 radius.max=200 radius.defl=5
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
     //% group="2D Shapes"
@@ -796,7 +803,7 @@ namespace coordinates {
     //% blockId=minecraftGetSpherePositions
     //% block="get optimized sphere positions at center $center radius $radius || hollow $hollow density $density"
     //% center.shadow=minecraftCreateWorldInternal
-    //% radius.min=1 radius.max=50 radius.defl=5
+    //% radius.min=1 radius.max=200 radius.defl=5
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% density.min=0.1 density.max=1.0 density.defl=1.0
     //% expandableArgumentMode="toggle"
@@ -835,6 +842,9 @@ namespace coordinates {
                         if (densityFactor >= 1.0 || Math.random() < densityFactor) {
                             if (validateCoordinates(x, y, z)) {
                                 positions.push(world(x, y, z));
+                                if (positions.length % PROGRESS_INTERVAL === 0) {
+                                    player.say(`${positions.length}`);
+                                }
                             }
                         }
                     }
@@ -920,6 +930,9 @@ namespace coordinates {
     //% group="High-speed Building"
     export function optimizedFill(positions: Position[], block: number): void {
         if (positions.length === 0) return;
+        
+        // 大きな構造物の場合は進捗を表示
+        const isLargeStructure = positions.length > 1000;
 
         // MakeCode互換の重複除去（高速化）
         const uniquePositions: Position[] = [];
@@ -948,6 +961,7 @@ namespace coordinates {
         const xs = getUniqueCoords(uniquePositions, Axis.X);
         const ys = getUniqueCoords(uniquePositions, Axis.Y);
         const zs = getUniqueCoords(uniquePositions, Axis.Z);
+        
         
         // 3次元ブール配列でブロック存在を高速管理
         const blockExists: boolean[][][] = [];
@@ -1039,6 +1053,7 @@ namespace coordinates {
                 }
             }
         }
+        
     }
 
 }

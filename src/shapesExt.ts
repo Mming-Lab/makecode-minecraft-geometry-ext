@@ -54,7 +54,7 @@ namespace shapes {
     //% block="build circle with %block=minecraftBlock at center $center radius $radius orientation $orientation || hollow $hollow"
     //% block.shadow=minecraftBlock
     //% center.shadow=minecraftCreateWorldInternal
-    //% radius.min=1 radius.max=50 radius.defl=5
+    //% radius.min=1 radius.max=200 radius.defl=5
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
     //% group="Basic Shapes"
@@ -76,7 +76,7 @@ namespace shapes {
     //% block="build optimized sphere with %block=minecraftBlock at center $center radius $radius || hollow $hollow density $density"
     //% block.shadow=minecraftBlock
     //% center.shadow=minecraftCreateWorldInternal
-    //% radius.min=1 radius.max=50 radius.defl=5
+    //% radius.min=1 radius.max=200 radius.defl=5
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% density.min=0.1 density.max=1.0 density.defl=1.0
     //% expandableArgumentMode="toggle"
@@ -120,8 +120,8 @@ namespace shapes {
     //% block="build optimized cylinder with %block=minecraftBlock at center $center radius $radius height $height || hollow $hollow"
     //% block.shadow=minecraftBlock
     //% center.shadow=minecraftCreateWorldInternal
-    //% radius.min=1 radius.max=50 radius.defl=5
-    //% height.min=1 height.max=100 height.defl=10
+    //% radius.min=1 radius.max=200 radius.defl=5
+    //% height.min=1 height.max=300 height.defl=10
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
     //% group="Spheres and Ellipsoids"
@@ -143,8 +143,8 @@ namespace shapes {
     //% block="build cone with %block=minecraftBlock at center $center radius $radius height $height || hollow $hollow"
     //% block.shadow=minecraftBlock
     //% center.shadow=minecraftCreateWorldInternal
-    //% radius.min=1 radius.max=50 radius.defl=5
-    //% height.min=1 height.max=100 height.defl=10
+    //% radius.min=1 radius.max=200 radius.defl=5
+    //% height.min=1 height.max=300 height.defl=10
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
     //% group="Solid Shapes"
@@ -166,8 +166,8 @@ namespace shapes {
     //% block="build torus with %block=minecraftBlock at center $center major radius $majorRadius minor radius $minorRadius || hollow $hollow"
     //% block.shadow=minecraftBlock
     //% center.shadow=minecraftCreateWorldInternal
-    //% majorRadius.min=3 majorRadius.max=50 majorRadius.defl=8
-    //% minorRadius.min=1 minorRadius.max=20 minorRadius.defl=3
+    //% majorRadius.min=3 majorRadius.max=200 majorRadius.defl=8
+    //% minorRadius.min=1 minorRadius.max=100 minorRadius.defl=3
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
     //% group="Complex Shapes"
@@ -191,9 +191,9 @@ namespace shapes {
     //% block="build optimized ellipsoid with %block=minecraftBlock at center $center X radius $radiusX Y radius $radiusY Z radius $radiusZ || hollow $hollow"
     //% block.shadow=minecraftBlock
     //% center.shadow=minecraftCreateWorldInternal
-    //% radiusX.min=1 radiusX.max=50 radiusX.defl=5
-    //% radiusY.min=1 radiusY.max=50 radiusY.defl=3
-    //% radiusZ.min=1 radiusZ.max=50 radiusZ.defl=7
+    //% radiusX.min=1 radiusX.max=200 radiusX.defl=5
+    //% radiusY.min=1 radiusY.max=200 radiusY.defl=3
+    //% radiusZ.min=1 radiusZ.max=200 radiusZ.defl=7
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
     //% group="Spheres and Ellipsoids"
@@ -216,8 +216,8 @@ namespace shapes {
     //% block="build helix with %block=minecraftBlock at center $center radius $radius height $height turns $turns || clockwise $clockwise"
     //% block.shadow=minecraftBlock
     //% center.shadow=minecraftCreateWorldInternal
-    //% radius.min=1 radius.max=50 radius.defl=5
-    //% height.min=2 height.max=100 height.defl=20
+    //% radius.min=1 radius.max=200 radius.defl=5
+    //% height.min=2 height.max=300 height.defl=20
     //% turns.min=0.5 turns.max=20 turns.defl=3
     //% clockwise.shadow=toggleOnOff clockwise.defl=true
     //% expandableArgumentMode="toggle"
@@ -240,8 +240,8 @@ namespace shapes {
     //% block="build paraboloid with %block=minecraftBlock at center $center radius $radius height $height || hollow $hollow"
     //% block.shadow=minecraftBlock
     //% center.shadow=minecraftCreateWorldInternal
-    //% radius.min=2 radius.max=50 radius.defl=8
-    //% height.min=1 height.max=50 height.defl=10
+    //% radius.min=2 radius.max=200 radius.defl=8
+    //% height.min=1 height.max=300 height.defl=10
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
     //% group="Complex Shapes"
@@ -264,9 +264,9 @@ namespace shapes {
     //% block="build hyperboloid with %block=minecraftBlock at center $center base radius $baseRadius waist radius $waistRadius height $height || hollow $hollow"
     //% block.shadow=minecraftBlock
     //% center.shadow=minecraftCreateWorldInternal
-    //% baseRadius.min=3 baseRadius.max=50 baseRadius.defl=10
-    //% waistRadius.min=1 waistRadius.max=30 waistRadius.defl=5
-    //% height.min=4 height.max=100 height.defl=20
+    //% baseRadius.min=3 baseRadius.max=200 baseRadius.defl=10
+    //% waistRadius.min=1 waistRadius.max=100 waistRadius.defl=5
+    //% height.min=4 height.max=300 height.defl=20
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
     //% group="Complex Shapes"
