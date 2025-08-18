@@ -17,12 +17,94 @@ namespace shapes {
     //% blockExternalInputs=1
     //% startPoint.shadow=minecraftCreateWorldInternal
     //% endPoint.shadow=minecraftCreateWorldInternal
-    //% group="Curves"
+    //% group="Lines and Curves"
     export function PlaceVariableBezierCurve(startPoint: Position, controlPoints: Position[], endPoint: Position, block: number): void {
         const positions = coordinates.getVariableBezierCurvePositions(startPoint, controlPoints, endPoint);
-        for (let pos of positions) {
-            blocks.place(block, pos);
-        }
+        coordinates.optimizedFill(positions, block);
+    }
+
+    /**
+     * Create a line between two points by placing blocks
+     * @param p0 Starting position of the line
+     * @param p1 Ending position of the line
+     * @param block Block type to place
+     */
+    //% weight=100
+    //% blockId=minecraftCreateLine
+    //% block="build line with %block=minecraftBlock from $p0 to $p1"
+    //% block.shadow=minecraftBlock
+    //% p0.shadow=minecraftCreateWorldInternal
+    //% p1.shadow=minecraftCreateWorldInternal
+    //% group="Basic Shapes"
+    export function createLine(p0: Position, p1: Position, block: number): void {
+        const positions = coordinates.getLinePositions(p0, p1);
+        coordinates.optimizedFill(positions, block);
+    }
+
+    /**
+     * Create a circle by placing blocks
+     * @param center Center position of the circle
+     * @param radius Radius of the circle (1-50 blocks)
+     * @param orientation Circle orientation (X, Y, or Z axis)
+     * @param block Block type to place
+     * @param hollow Whether to create a hollow circle (outline only)
+     */
+    //% weight=95
+    //% blockId=minecraftCreateCircle
+    //% block="build circle with %block=minecraftBlock at center $center radius $radius orientation $orientation || hollow $hollow"
+    //% block.shadow=minecraftBlock
+    //% center.shadow=minecraftCreateWorldInternal
+    //% radius.min=1 radius.max=50 radius.defl=5
+    //% hollow.shadow=toggleOnOff hollow.defl=false
+    //% expandableArgumentMode="toggle"
+    //% group="Basic Shapes"
+    export function createCircle(center: Position, radius: number, orientation: Axis, block: number, hollow: boolean = false): void {
+        const positions = coordinates.getCirclePositions(center, radius, orientation, hollow);
+        coordinates.optimizedFill(positions, block);
+    }
+
+    /**
+     * Create a sphere by placing blocks using optimized algorithm
+     * @param center Center position of the sphere
+     * @param radius Radius of the sphere (1-50 blocks)
+     * @param block Block type to place
+     * @param hollow Whether to create a hollow sphere (shell only)
+     * @param density Density factor for position sampling (0.1-1.0, default: 1.0)
+     */
+    //% weight=90
+    //% blockId=minecraftCreateSphere
+    //% block="build optimized sphere with %block=minecraftBlock at center $center radius $radius || hollow $hollow density $density"
+    //% block.shadow=minecraftBlock
+    //% center.shadow=minecraftCreateWorldInternal
+    //% radius.min=1 radius.max=50 radius.defl=5
+    //% hollow.shadow=toggleOnOff hollow.defl=false
+    //% density.min=0.1 density.max=1.0 density.defl=1.0
+    //% expandableArgumentMode="toggle"
+    //% group="Spheres and Ellipsoids"
+    export function createSphere(center: Position, radius: number, block: number, hollow: boolean = false, density: number = 1.0): void {
+        const positions = coordinates.getSpherePositions(center, radius, hollow, density);
+        coordinates.optimizedFill(positions, block);
+    }
+
+    /**
+     * Create a cuboid (rectangular prism) by placing blocks
+     * @param corner1 First corner position of the cuboid
+     * @param corner2 Opposite corner position of the cuboid
+     * @param block Block type to place
+     * @param hollow Whether to create a hollow cuboid (shell only)
+     */
+    //% weight=85
+    //% blockId=minecraftCreateCuboid
+    //% block="build cuboid with %block=minecraftBlock from corner $corner1 to corner $corner2 || hollow $hollow"
+    //% block.shadow=minecraftBlock
+    //% corner1.shadow=minecraftCreateWorldInternal
+    //% corner2.shadow=minecraftCreateWorldInternal
+    //% hollow.shadow=toggleOnOff hollow.defl=false
+    //% expandableArgumentMode="toggle"
+    //% group="Solid Shapes"
+    export function createCuboid(corner1: Position, corner2: Position, block: number, hollow: boolean = false): void {
+        const positions = coordinates.getCuboidPositions(corner1, corner2, hollow);
+        coordinates.optimizedFill(positions, block);
     }
 
     /**
@@ -42,12 +124,10 @@ namespace shapes {
     //% height.min=1 height.max=100 height.defl=10
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Optimized)"
+    //% group="Spheres and Ellipsoids"
     export function createCylinder(center: Position, radius: number, height: number, block: number, hollow: boolean = false): void {
         const positions = coordinates.getCylinderPositions(center, radius, height, hollow);
-        for (let pos of positions) {
-            blocks.place(block, pos);
-        }
+        coordinates.optimizedFill(positions, block);
     }
 
     /**
@@ -67,12 +147,10 @@ namespace shapes {
     //% height.min=1 height.max=100 height.defl=10
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Basic)"
+    //% group="Solid Shapes"
     export function createCone(center: Position, radius: number, height: number, block: number, hollow: boolean = false): void {
         const positions = coordinates.getConePositions(center, radius, height, hollow);
-        for (let pos of positions) {
-            blocks.place(block, pos);
-        }
+        coordinates.optimizedFill(positions, block);
     }
 
     /**
@@ -92,12 +170,10 @@ namespace shapes {
     //% minorRadius.min=1 minorRadius.max=20 minorRadius.defl=3
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Advanced)"
+    //% group="Complex Shapes"
     export function createTorus(center: Position, majorRadius: number, minorRadius: number, block: number, hollow: boolean = false): void {
         const positions = coordinates.getTorusPositions(center, majorRadius, minorRadius, hollow);
-        for (let pos of positions) {
-            blocks.place(block, pos);
-        }
+        coordinates.optimizedFill(positions, block);
     }
 
 
@@ -120,12 +196,10 @@ namespace shapes {
     //% radiusZ.min=1 radiusZ.max=50 radiusZ.defl=7
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Optimized)"
+    //% group="Spheres and Ellipsoids"
     export function createEllipsoid(center: Position, radiusX: number, radiusY: number, radiusZ: number, block: number, hollow: boolean = false): void {
         const positions = coordinates.getEllipsoidPositions(center, radiusX, radiusY, radiusZ, hollow);
-        for (let pos of positions) {
-            blocks.place(block, pos);
-        }
+        coordinates.optimizedFill(positions, block);
     }
 
     /**
@@ -147,12 +221,10 @@ namespace shapes {
     //% turns.min=0.5 turns.max=20 turns.defl=3
     //% clockwise.shadow=toggleOnOff clockwise.defl=true
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Advanced)"
+    //% group="Complex Shapes"
     export function createHelix(center: Position, radius: number, height: number, turns: number, block: number, clockwise: boolean = true): void {
         const positions = coordinates.getHelixPositions(center, radius, height, turns, clockwise);
-        for (let pos of positions) {
-            blocks.place(block, pos);
-        }
+        coordinates.optimizedFill(positions, block);
     }
 
     /**
@@ -172,12 +244,10 @@ namespace shapes {
     //% height.min=1 height.max=50 height.defl=10
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Advanced)"
+    //% group="Complex Shapes"
     export function createParaboloid(center: Position, radius: number, height: number, block: number, hollow: boolean = false): void {
         const positions = coordinates.getParaboloidPositions(center, radius, height, hollow);
-        for (let pos of positions) {
-            blocks.place(block, pos);
-        }
+        coordinates.optimizedFill(positions, block);
     }
 
     /**
@@ -199,12 +269,10 @@ namespace shapes {
     //% height.min=4 height.max=100 height.defl=20
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Advanced)"
+    //% group="Complex Shapes"
     export function createHyperboloid(center: Position, baseRadius: number, waistRadius: number, height: number, block: number, hollow: boolean = false): void {
         const positions = coordinates.getHyperboloidPositions(center, baseRadius, waistRadius, height, hollow);
-        for (let pos of positions) {
-            blocks.place(block, pos);
-        }
+        coordinates.optimizedFill(positions, block);
     }
 
 }

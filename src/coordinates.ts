@@ -139,6 +139,58 @@ namespace coordinates {
     }
 
     /**
+     * Helper function: Calculate positions for a circle (MCP Server optimized)
+     * @param center Center position of the circle
+     * @param radius Radius of the circle
+     * @param axis Circle orientation (X, Y, or Z axis)
+     * @param offset Offset along the axis
+     * @param hollow Whether to create a hollow circle (outline only)
+     * @returns Array of positions forming the circle
+     */
+    function getCirclePositionsOptimized(center: Position, radius: number, axis: Axis, offset: number = 0, hollow: boolean = false): Position[] {
+        const positions: Position[] = [];
+        const centerX = Math.round(center.getValue(Axis.X));
+        const centerY = Math.round(center.getValue(Axis.Y));
+        const centerZ = Math.round(center.getValue(Axis.Z));
+        const radiusInt = Math.round(radius);
+        const radiusSquared = radiusInt * radiusInt;
+        const innerRadius = hollow ? Math.max(0, radiusInt - 1) : 0;
+        const innerRadiusSquared = innerRadius * innerRadius;
+
+        // MCP Server式効率的円形生成
+        for (let dx = -radiusInt; dx <= radiusInt; dx++) {
+            const dxSquared = dx * dx;
+            if (dxSquared > radiusSquared) continue;
+
+            const maxDzSquared = radiusSquared - dxSquared;
+            const maxDz = Math.floor(Math.sqrt(maxDzSquared));
+
+            for (let dz = -maxDz; dz <= maxDz; dz++) {
+                const distanceSquared = dxSquared + dz * dz;
+
+                if (distanceSquared <= radiusSquared &&
+                    (!hollow || distanceSquared >= innerRadiusSquared)) {
+                    
+                    let worldPos: Position;
+                    if (axis === Axis.Y) {
+                        worldPos = world(centerX + dx, centerY + offset, centerZ + dz);
+                    } else if (axis === Axis.X) {
+                        worldPos = world(centerX + offset, centerY + dx, centerZ + dz);
+                    } else { // axis === Axis.Z
+                        worldPos = world(centerX + dx, centerY + dz, centerZ + offset);
+                    }
+                    
+                    if (validateCoordinates(worldPos.getValue(Axis.X), worldPos.getValue(Axis.Y), worldPos.getValue(Axis.Z))) {
+                        positions.push(worldPos);
+                    }
+                }
+            }
+        }
+
+        return positions;
+    }
+
+    /**
      * Calculate positions for a cylinder using optimized building algorithm
      * @param center Center position of the cylinder base
      * @param radius Radius of the cylinder (1-50 blocks)
@@ -158,44 +210,24 @@ namespace coordinates {
     //% expandableArgumentMode="toggle"
     //% group="3D Shapes (Optimized)"
     export function getCylinderPositions(center: Position, radius: number, height: number, hollow: boolean = false, layers: number = 0): Position[] {
-        const centerX = normalizeCoordinate(center.getValue(Axis.X));
-        const centerY = normalizeCoordinate(center.getValue(Axis.Y));
-        const centerZ = normalizeCoordinate(center.getValue(Axis.Z));
-
         const radiusInt = Math.max(1, Math.round(radius));
         const heightInt = Math.max(1, Math.round(height));
         const layersInt = layers > 0 ? Math.min(layers, heightInt) : heightInt;
-        const radiusSquared = radiusInt * radiusInt;
-        const innerRadius = hollow ? Math.max(0, radiusInt - 1) : 0;
-        const innerRadiusSquared = innerRadius * innerRadius;
         const positions: Position[] = [];
 
-        // 最適化された円柱アルゴリズム（buildingフォルダのアルゴリズムを流用）
+        // MCP Server式レイヤー分割アルゴリズム（高効率）
         for (let i = 0; i < layersInt; i++) {
-            // 各層でのY座標
-            const currentY = centerY + i;
+            const layerCenter = world(
+                center.getValue(Axis.X),
+                center.getValue(Axis.Y) + i,
+                center.getValue(Axis.Z)
+            );
             
-            // 円形の最適化：対称性を利用して計算量削減
-            for (let u = -radiusInt; u <= radiusInt; u++) {
-                const uSquared = u * u;
-                if (uSquared > radiusSquared) continue;
-                
-                // 平方根を最小限に抑制した最適化
-                const maxVSquared = radiusSquared - uSquared;
-                const maxV = Math.floor(Math.sqrt(maxVSquared));
-                
-                for (let v = -maxV; v <= maxV; v++) {
-                    const distanceSquared = uSquared + v * v;
-                    
-                    if (distanceSquared <= radiusSquared &&
-                        (!hollow || distanceSquared >= innerRadiusSquared)) {
-                        const worldX = centerX + u;
-                        const worldZ = centerZ + v;
-                        if (validateCoordinates(worldX, currentY, worldZ)) {
-                            positions.push(world(worldX, currentY, worldZ));
-                        }
-                    }
-                }
+            // 各レイヤーで最適化された円形を生成
+            const circlePositions = getCirclePositionsOptimized(layerCenter, radiusInt, Axis.Y, 0, hollow);
+            // MakeCode互換のスプレッド演算子代替
+            for (const pos of circlePositions) {
+                positions.push(pos);
             }
         }
 
@@ -357,58 +389,31 @@ namespace coordinates {
         const radiusZInt = Math.max(1, Math.round(radiusZ));
         const positions: Position[] = [];
 
-        // 楕円体の最適化された方程式（buildingアルゴリズムベース）
-        const radiusXSquared = radiusXInt * radiusXInt;
-        const radiusYSquared = radiusYInt * radiusYInt;
-        const radiusZSquared = radiusZInt * radiusZInt;
+        // MCP Server式正規化距離計算（シンプルで高効率）
+        const maxRadius = Math.max(Math.max(radiusXInt, radiusYInt), radiusZInt);
         
-        // 中空判定の最適化
-        const innerRadiusX = hollow ? Math.max(1, radiusXInt - 1) : 1;
-        const innerRadiusY = hollow ? Math.max(1, radiusYInt - 1) : 1;
-        const innerRadiusZ = hollow ? Math.max(1, radiusZInt - 1) : 1;
-        const innerRadiusXSquared = innerRadiusX * innerRadiusX;
-        const innerRadiusYSquared = innerRadiusY * innerRadiusY;
-        const innerRadiusZSquared = innerRadiusZ * innerRadiusZ;
-
-        // 計算最適化：外側ループで範囲制限を適用
-        for (let x = -radiusXInt; x <= radiusXInt; x++) {
-            const xTerm = x * x * radiusYSquared * radiusZSquared;
-            const remainingX = radiusXSquared * radiusYSquared * radiusZSquared - xTerm;
-            if (remainingX < 0) continue; // 早期終了
-            
-            for (let y = -radiusYInt; y <= radiusYInt; y++) {
-                const yTerm = y * y * radiusXSquared * radiusZSquared;
-                const remainingXY = remainingX - yTerm;
-                if (remainingXY < 0) continue; // 早期終了
-                
-                // Z範囲の最適化計算
-                const maxZSquared = remainingXY / (radiusXSquared * radiusYSquared);
-                const maxZ = Math.min(radiusZInt, Math.floor(Math.sqrt(maxZSquared)));
-                
-                for (let z = -maxZ; z <= maxZ; z++) {
-                    const zTerm = z * z * radiusXSquared * radiusYSquared;
-                    const totalDistance = xTerm + yTerm + zTerm;
-                    const threshold = radiusXSquared * radiusYSquared * radiusZSquared;
-
-                    if (totalDistance <= threshold) {
-                        let isInside = true;
-                        if (hollow) {
-                            // 中空判定の最適化
-                            const innerDistance = (x * x * innerRadiusYSquared * innerRadiusZSquared) +
-                                (y * y * innerRadiusXSquared * innerRadiusZSquared) +
-                                (z * z * innerRadiusXSquared * innerRadiusYSquared);
-                            const innerThreshold = innerRadiusXSquared * innerRadiusYSquared * innerRadiusZSquared;
-                            isInside = innerDistance >= innerThreshold;
-                        }
-
-                        if (isInside) {
-                            const worldX = centerX + x;
-                            const worldY = centerY + y;
-                            const worldZ = centerZ + z;
-                            if (validateCoordinates(worldX, worldY, worldZ)) {
-                                positions.push(world(worldX, worldY, worldZ));
-                            }
-                        }
+        for (let x = centerX - maxRadius; x <= centerX + maxRadius; x++) {
+            for (let y = centerY - maxRadius; y <= centerY + maxRadius; y++) {
+                for (let z = centerZ - maxRadius; z <= centerZ + maxRadius; z++) {
+                    // 正規化距離計算（MCPサーバー方式）
+                    const normalizedDistance = Math.sqrt(
+                        Math.pow((x - centerX) / radiusXInt, 2) +
+                        Math.pow((y - centerY) / radiusYInt, 2) +
+                        Math.pow((z - centerZ) / radiusZInt, 2)
+                    );
+                    
+                    let shouldPlace = false;
+                    
+                    if (hollow) {
+                        // 中空判定：表面のみ（MCPサーバー方式）
+                        shouldPlace = normalizedDistance <= 1 && normalizedDistance >= 0.8;
+                    } else {
+                        // 実体判定：内部含む
+                        shouldPlace = normalizedDistance <= 1;
+                    }
+                    
+                    if (shouldPlace && validateCoordinates(x, y, z)) {
+                        positions.push(world(x, y, z));
                     }
                 }
             }
@@ -527,31 +532,34 @@ namespace coordinates {
 
         const radiusInt = Math.round(radius);
         const heightInt = Math.round(height);
-        const totalAngle = turns * 2 * 3.14159; // 総回転角度（ラジアン）
-        const direction = clockwise ? 1 : -1; // 回転方向
+        const direction = clockwise ? 1 : -1;
 
-        // 螺旋の滑らかさを決定するステップ数（高さに比例）
-        const steps = Math.max(heightInt * 2, Math.round(totalAngle * radiusInt / 2));
-        const angleStep = totalAngle / steps;
-        const heightStep = heightInt / steps;
+        // MCP Server式弧長ベース密度計算（連続性重視）
+        const circumference = 2 * 3.14159 * radiusInt; // Math.PI → 3.14159
+        const totalArcLength = circumference * turns;
+        const helixLength = Math.sqrt(totalArcLength * totalArcLength + heightInt * heightInt);
+        const steps = Math.max(heightInt * 2, Math.round(helixLength)); // 連続性を保つ密度
 
-        let previousPosition: Position | null = null;
+        // MakeCode互換の重複除去用（Set代替）
+        const seenPositions: string[] = [];
 
         for (let i = 0; i <= steps; i++) {
-            const angle = i * angleStep * direction;
-            const currentHeight = i * heightStep;
+            const progress = i / steps;
+            const angle = (turns * 2 * 3.14159) * progress * direction; // Math.PI → 3.14159
+            const currentHeight = heightInt * progress;
 
-            // 螺旋の3D座標計算（円形螺旋の媒介変数方程式）
+            // 螺旋の3D座標計算（MCPサーバー方式）
             const x = centerX + Math.round(radiusInt * Math.cos(angle));
             const y = centerY + Math.round(currentHeight);
             const z = centerZ + Math.round(radiusInt * Math.sin(angle));
 
-            const currentPosition = world(x, y, z);
-
-            // 重複座標を避ける（効率化）
-            if (!previousPosition || !positions.equals(previousPosition, currentPosition)) {
-                positionsArr.push(currentPosition);
-                previousPosition = currentPosition;
+            // 重複座標チェック（MakeCode互換）
+            const posKey = `${x},${y},${z}`;
+            if (seenPositions.indexOf(posKey) === -1) {
+                seenPositions.push(posKey);
+                if (validateCoordinates(x, y, z)) {
+                    positionsArr.push(world(x, y, z));
+                }
             }
         }
 
@@ -802,40 +810,31 @@ namespace coordinates {
         const radiusSquared = radiusInt * radiusInt;
         const densityFactor = Math.max(0.1, Math.min(1.0, density));
 
-        // 最適化された球体アルゴリズム（buildingフォルダベース）
-        const innerRadius = hollow ? Math.max(0, radiusInt - 1) : 0;
-        const innerRadiusSquared = innerRadius * innerRadius;
-        
-        // 高速化：対称性を利用した計算量削減
-        for (let x = -radiusInt; x <= radiusInt; x++) {
-            const xSquared = x * x;
-            if (xSquared > radiusSquared) continue;
-
-            // Y範囲の事前計算で平方根計算を削減
-            const maxYSquared = radiusSquared - xSquared;
-            const maxY = Math.floor(Math.sqrt(maxYSquared));
-
-            for (let y = -maxY; y <= maxY; y++) {
-                const ySquared = y * y;
-                const xySquared = xSquared + ySquared;
-
-                // Z範囲の事前計算で計算効率を向上
-                const maxZSquared = radiusSquared - xySquared;
-                const maxZ = Math.floor(Math.sqrt(maxZSquared));
-
-                for (let z = -maxZ; z <= maxZ; z++) {
-                    const distanceSquared = xySquared + z * z;
-
-                    // 高速化された境界判定
-                    if (distanceSquared <= radiusSquared &&
-                        (!hollow || distanceSquared >= innerRadiusSquared)) {
-                        // 密度サンプリングの最適化
+        // MCP Server式球体アルゴリズム（最適化済み）
+        for (let x = centerX - radiusInt; x <= centerX + radiusInt; x++) {
+            for (let y = centerY - radiusInt; y <= centerY + radiusInt; y++) {
+                for (let z = centerZ - radiusInt; z <= centerZ + radiusInt; z++) {
+                    const distance = Math.sqrt(
+                        Math.pow(x - centerX, 2) + 
+                        Math.pow(y - centerY, 2) + 
+                        Math.pow(z - centerZ, 2)
+                    );
+                    
+                    let shouldPlace = false;
+                    
+                    if (hollow) {
+                        // 中空の球体：表面のみ（MCPサーバー方式）
+                        shouldPlace = distance <= radiusInt && distance >= radiusInt - 1;
+                    } else {
+                        // 実体の球体：内部も含む
+                        shouldPlace = distance <= radiusInt;
+                    }
+                    
+                    if (shouldPlace) {
+                        // 密度サンプリング
                         if (densityFactor >= 1.0 || Math.random() < densityFactor) {
-                            const worldX = centerX + x;
-                            const worldY = centerY + y;
-                            const worldZ = centerZ + z;
-                            if (validateCoordinates(worldX, worldY, worldZ)) {
-                                positions.push(world(worldX, worldY, worldZ));
+                            if (validateCoordinates(x, y, z)) {
+                                positions.push(world(x, y, z));
                             }
                         }
                     }
@@ -910,112 +909,130 @@ namespace coordinates {
     }
 
     /**
-     * Optimized block placement using automatic rectangular region detection
+     * High-speed block placement using optimized fill operations
+     * Automatically detects rectangular regions for maximum efficiency
      * @param positions Array of positions to fill with blocks
      * @param block Block type to place
      */
-    //% weight=1
+    //% weight=200
     //% blockId=coordinatesOptimizedFill
-    //% block="optimized fill positions $positions with $block=minecraftBlock"
-    //% advanced=true
-    //% group="Block Optimization"
+    //% block="high-speed fill positions $positions with $block=minecraftBlock"
+    //% group="High-speed Building"
     export function optimizedFill(positions: Position[], block: number): void {
         if (positions.length === 0) return;
 
-        const positionStrings: string[] = [];
+        // MakeCode互換の重複除去（高速化）
+        const uniquePositions: Position[] = [];
+        const seenKeys: string[] = [];
         
         for (const pos of positions) {
             const key = `${pos.getValue(Axis.X)},${pos.getValue(Axis.Y)},${pos.getValue(Axis.Z)}`;
-            if (positionStrings.indexOf(key) === -1) {
-                positionStrings.push(key);
+            if (seenKeys.indexOf(key) === -1) {
+                seenKeys.push(key);
+                uniquePositions.push(pos);
             }
         }
 
-        // 重複排除用のヘルパー関数
-        function uniqueNumbers(arr: number[]): number[] {
-            const unique: number[] = [];
-            for (const item of arr) {
-                if (unique.indexOf(item) === -1) {
-                    unique.push(item);
+        // 座標軸の値を効率的に抽出
+        function getUniqueCoords(positions: Position[], axis: Axis): number[] {
+            const coords: number[] = [];
+            for (const pos of positions) {
+                const coord = pos.getValue(axis);
+                if (coords.indexOf(coord) === -1) {
+                    coords.push(coord);
                 }
             }
-            return unique.sort((a, b) => a - b);
+            return coords.sort((a, b) => a - b);
         }
 
-        const xs = uniqueNumbers(positions.map(p => p.getValue(Axis.X)));
-        const ys = uniqueNumbers(positions.map(p => p.getValue(Axis.Y)));
-        const zs = uniqueNumbers(positions.map(p => p.getValue(Axis.Z)));
+        const xs = getUniqueCoords(uniquePositions, Axis.X);
+        const ys = getUniqueCoords(uniquePositions, Axis.Y);
+        const zs = getUniqueCoords(uniquePositions, Axis.Z);
         
-        const remainingBlocks: string[] = [];
-        for (let i = 0; i < positionStrings.length; i++) {
-            remainingBlocks.push(positionStrings[i]);
+        // 3次元ブール配列でブロック存在を高速管理
+        const blockExists: boolean[][][] = [];
+        
+        // 配列初期化
+        for (let x = 0; x < xs.length; x++) {
+            blockExists[x] = [];
+            for (let y = 0; y < ys.length; y++) {
+                blockExists[x][y] = [];
+                for (let z = 0; z < zs.length; z++) {
+                    blockExists[x][y][z] = false;
+                }
+            }
         }
         
+        // ブロック位置をマップに記録
+        for (const pos of uniquePositions) {
+            const xIdx = xs.indexOf(pos.getValue(Axis.X));
+            const yIdx = ys.indexOf(pos.getValue(Axis.Y));
+            const zIdx = zs.indexOf(pos.getValue(Axis.Z));
+            if (xIdx !== -1 && yIdx !== -1 && zIdx !== -1) {
+                blockExists[xIdx][yIdx][zIdx] = true;
+            }
+        }
+        
+        // 貪欲アルゴリズムで最大直方体を検出
         for (let x1 = 0; x1 < xs.length; x1++) {
             for (let y1 = 0; y1 < ys.length; y1++) {
                 for (let z1 = 0; z1 < zs.length; z1++) {
-                    const startKey = `${xs[x1]},${ys[y1]},${zs[z1]}`;
-                    if (remainingBlocks.indexOf(startKey) === -1) continue;
+                    if (!blockExists[x1][y1][z1]) continue;
                     
                     let maxX = x1, maxY = y1, maxZ = z1;
                     
+                    // X方向拡張
                     for (let x2 = x1; x2 < xs.length; x2++) {
                         let canExpand = true;
-                        for (let y = y1; y <= maxY; y++) {
-                            for (let z = z1; z <= maxZ; z++) {
-                                if (remainingBlocks.indexOf(`${xs[x2]},${ys[y]},${zs[z]}`) === -1) {
+                        for (let y = y1; y <= maxY && canExpand; y++) {
+                            for (let z = z1; z <= maxZ && canExpand; z++) {
+                                if (!blockExists[x2][y][z]) {
                                     canExpand = false;
-                                    break;
                                 }
                             }
-                            if (!canExpand) break;
                         }
                         if (canExpand) maxX = x2;
                         else break;
                     }
                     
+                    // Y方向拡張
                     for (let y2 = y1; y2 < ys.length; y2++) {
                         let canExpand = true;
-                        for (let x = x1; x <= maxX; x++) {
-                            for (let z = z1; z <= maxZ; z++) {
-                                if (remainingBlocks.indexOf(`${xs[x]},${ys[y2]},${zs[z]}`) === -1) {
+                        for (let x = x1; x <= maxX && canExpand; x++) {
+                            for (let z = z1; z <= maxZ && canExpand; z++) {
+                                if (!blockExists[x][y2][z]) {
                                     canExpand = false;
-                                    break;
                                 }
                             }
-                            if (!canExpand) break;
                         }
                         if (canExpand) maxY = y2;
                         else break;
                     }
                     
+                    // Z方向拡張
                     for (let z2 = z1; z2 < zs.length; z2++) {
                         let canExpand = true;
-                        for (let x = x1; x <= maxX; x++) {
-                            for (let y = y1; y <= maxY; y++) {
-                                if (remainingBlocks.indexOf(`${xs[x]},${ys[y]},${zs[z2]}`) === -1) {
+                        for (let x = x1; x <= maxX && canExpand; x++) {
+                            for (let y = y1; y <= maxY && canExpand; y++) {
+                                if (!blockExists[x][y][z2]) {
                                     canExpand = false;
-                                    break;
                                 }
                             }
-                            if (!canExpand) break;
                         }
                         if (canExpand) maxZ = z2;
                         else break;
                     }
                     
+                    // 最適化されたfill操作実行
                     const fromPos = world(xs[x1], ys[y1], zs[z1]);
                     const toPos = world(xs[maxX], ys[maxY], zs[maxZ]);
                     blocks.fill(block, fromPos, toPos);
                     
+                    // 処理済み領域をクリア
                     for (let x = x1; x <= maxX; x++) {
                         for (let y = y1; y <= maxY; y++) {
                             for (let z = z1; z <= maxZ; z++) {
-                                const keyToRemove = `${xs[x]},${ys[y]},${zs[z]}`;
-                                const index = remainingBlocks.indexOf(keyToRemove);
-                                if (index !== -1) {
-                                    remainingBlocks.splice(index, 1);
-                                }
+                                blockExists[x][y][z] = false;
                             }
                         }
                     }
