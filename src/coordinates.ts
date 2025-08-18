@@ -2,8 +2,8 @@
 // Coordinate calculation namespace (returns position arrays without placing blocks)
 //% block="座標" weight=2 color=#4CAF50 icon="\uf43c" advanced=true
 namespace coordinates {
-    // 進捗表示間隔（ブロック数）
-    const PROGRESS_INTERVAL = 1000;
+    // 座標生成中のメッセージ表示間隔
+    const GENERATION_MESSAGE_INTERVAL = 10000;
 
     /**
      * Normalize coordinate to integer and clamp to valid range
@@ -234,6 +234,9 @@ namespace coordinates {
             // MakeCode互換のスプレッド演算子代替
             for (const pos of circlePositions) {
                 positions.push(pos);
+                if (positions.length % GENERATION_MESSAGE_INTERVAL === 0) {
+                    player.say("生成中...");
+                }
             }
         }
 
@@ -428,6 +431,9 @@ namespace coordinates {
                     
                     if (shouldPlace && validateCoordinates(x, y, z)) {
                         positions.push(world(x, y, z));
+                        if (positions.length % GENERATION_MESSAGE_INTERVAL === 0) {
+                            player.say("生成中...");
+                        }
                     }
                 }
             }
@@ -830,11 +836,6 @@ namespace coordinates {
         const totalSteps = maxX - minX + 1;
         
         for (let x = minX; x <= maxX; x++) {
-            const currentStep = x - minX + 1;
-            if (currentStep % Math.floor(totalSteps / 4) === 0) {
-                const progress = Math.round((currentStep / totalSteps) * 100);
-                player.say(`${progress}%`);
-            }
             for (let y = centerY - radiusInt; y <= centerY + radiusInt; y++) {
                 for (let z = centerZ - radiusInt; z <= centerZ + radiusInt; z++) {
                     const distance = Math.sqrt(
@@ -858,6 +859,9 @@ namespace coordinates {
                         if (densityFactor >= 1.0 || Math.random() < densityFactor) {
                             if (validateCoordinates(x, y, z)) {
                                 positions.push(world(x, y, z));
+                                if (positions.length % GENERATION_MESSAGE_INTERVAL === 0) {
+                                    player.say("生成中...");
+                                }
                             }
                         }
                     }
