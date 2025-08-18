@@ -1,5 +1,6 @@
 {
     "name": "makecode-minecraft-mming-Ext",
+    "version": "0.0.1",
     "description": "",
     "dependencies": {
         "core": "*",
@@ -22,7 +23,7 @@
         "test.ts"
     ],
     "targetVersions": {
-        "target": "2.1.9",
+        "target": "2.0.37",
         "targetId": "minecraft"
     },
     "supportedTargets": [
