@@ -9,7 +9,7 @@ namespace coordinates {
     const GENERATION_MESSAGE_INTERVAL = 1024;
 
     /** Batch processing size (memory optimization) */
-    export const BATCH_SIZE = 4116;
+    export const BATCH_SIZE = 2048;
     
     /** Valid range for Minecraft coordinates */
     const WORLD_BOUNDS = {
