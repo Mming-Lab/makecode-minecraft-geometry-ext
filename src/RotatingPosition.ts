@@ -24,13 +24,13 @@ namespace positions {
             n[2] = 1;
         }
 
-        // 角度 ⇒ 弧度　変換
-        const 円周率: number = 3.14159;
-        const 弧度 = angle * (円周率 / 180);
+        // 角度から弧度への変換
+        const PI = 3.14159;
+        const radians = angle * (PI / 180);
 
         // 回転行列
-        const sin = Math.sin(弧度);
-        const cos = Math.cos(弧度);
+        const sin = Math.sin(radians);
+        const cos = Math.cos(radians);
         const c1 = 1 - cos;
         let R = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
         R[0][0] = c1 * (n[0] * n[0]) + cos;
@@ -44,24 +44,23 @@ namespace positions {
         R[2][2] = c1 * (n[2] * n[2]) + cos;
 
 
-        // 座標を相対座標に変換
-        const 相対座標 = pos(
+        // 相対座標に変換
+        const relativeCoords = pos(
             targetCoordinates.getValue(Axis.X) - origin.getValue(Axis.X),
             targetCoordinates.getValue(Axis.Y) - origin.getValue(Axis.Y),
             targetCoordinates.getValue(Axis.Z) - origin.getValue(Axis.Z)
         );
 
-        // 相対座標に回転行列を積算する
-        const 回転相対座標 = pos(
-            R[0][0] * 相対座標.getValue(Axis.X) + R[0][1] * 相対座標.getValue(Axis.Y) + R[0][2] * 相対座標.getValue(Axis.Z),
-            R[1][0] * 相対座標.getValue(Axis.X) + R[1][1] * 相対座標.getValue(Axis.Y) + R[1][2] * 相対座標.getValue(Axis.Z),
-            R[2][0] * 相対座標.getValue(Axis.X) + R[2][1] * 相対座標.getValue(Axis.Y) + R[2][2] * 相対座標.getValue(Axis.Z)
+        // 相対座標に回転行列を適用
+        const rotatedRelativeCoords = pos(
+            R[0][0] * relativeCoords.getValue(Axis.X) + R[0][1] * relativeCoords.getValue(Axis.Y) + R[0][2] * relativeCoords.getValue(Axis.Z),
+            R[1][0] * relativeCoords.getValue(Axis.X) + R[1][1] * relativeCoords.getValue(Axis.Y) + R[1][2] * relativeCoords.getValue(Axis.Z),
+            R[2][0] * relativeCoords.getValue(Axis.X) + R[2][1] * relativeCoords.getValue(Axis.Y) + R[2][2] * relativeCoords.getValue(Axis.Z)
         );
 
         // 絶対座標に変換
-        const 結果 = positions.add(origin, 回転相対座標);
-        // player.say("(" + 結果.getValue(Axis.X) + ", " + 結果.getValue(Axis.Y) + ", " + 結果.getValue(Axis.Z) + ")")
-        return 結果;
+        const result = positions.add(origin, rotatedRelativeCoords);
+        return result;
     }
 
 }

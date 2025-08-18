@@ -1,58 +1,51 @@
-// 座標計算用の名前空間（ブロック配置せずに座標配列を返す）
 // Coordinate calculation namespace (returns position arrays without placing blocks)
 //% block="座標" weight=2 color=#4CAF50 icon="\uf43c" advanced=true
 namespace coordinates {
-    // 座標生成中のメッセージ表示間隔
-    const GENERATION_MESSAGE_INTERVAL = 10000;
+    // ==============================
+    // Configuration constants and message definitions
+    // ==============================
+    
+     /** Message display interval during coordinate generation */
+    const GENERATION_MESSAGE_INTERVAL = 1024;
 
-    /**
-     * Normalize coordinate to integer and clamp to valid range
-     * @param coord Raw coordinate value
-     * @returns Normalized integer coordinate
-     */
-    //% weight=5
-    //% blockId=coordinatesNormalizeCoordinate
-    //% block="normalize coordinate $coord"
-    //% coord.defl=0
-    //% advanced=true
-    //% group="Coordinate Utilities"
+    /** Batch processing size (memory optimization) */
+    export const BATCH_SIZE = 4116;
+    
+    /** Valid range for Minecraft coordinates */
+    const WORLD_BOUNDS = {
+        X_MIN: -30000000, X_MAX: 30000000,
+        Y_MIN: -64, Y_MAX: 320,
+        Z_MIN: -30000000, Z_MAX: 30000000
+    };
+    
+    /** Progress status messages (localized) */
+    const MESSAGES = {
+        GENERATING: "Generating...",
+        PLACEMENT_START: "Starting placement...",
+        COMPLETED: "Placement complete!"
+    };
+    
+    /** Mathematical constants */
+    const MATH_CONSTANTS = {
+        PI: 3.14159,
+        TWO_PI: 2 * 3.14159
+    };
+
+    // ==============================
+    // Coordinate utility functions
+    // ==============================
+    
     function normalizeCoordinate(coord: number): number {
         const normalized = Math.round(coord);
-        return Math.max(-30000000, Math.min(30000000, normalized));
+        return Math.max(WORLD_BOUNDS.X_MIN, Math.min(WORLD_BOUNDS.X_MAX, normalized));
     }
 
-    /**
-     * Validate coordinates are within Minecraft world bounds
-     * @param x X coordinate
-     * @param y Y coordinate 
-     * @param z Z coordinate
-     * @returns True if coordinates are valid
-     */
-    //% weight=4
-    //% blockId=coordinatesValidateCoordinates
-    //% block="validate coordinates X $x Y $y Z $z"
-    //% x.defl=0 y.defl=64 z.defl=0
-    //% advanced=true
-    //% group="Coordinate Utilities"
     function validateCoordinates(x: number, y: number, z: number): boolean {
-        return x >= -30000000 && x <= 30000000 &&
-               y >= -64 && y <= 320 &&
-               z >= -30000000 && z <= 30000000;
+        return x >= WORLD_BOUNDS.X_MIN && x <= WORLD_BOUNDS.X_MAX &&
+               y >= WORLD_BOUNDS.Y_MIN && y <= WORLD_BOUNDS.Y_MAX &&
+               z >= WORLD_BOUNDS.Z_MIN && z <= WORLD_BOUNDS.Z_MAX;
     }
 
-    /**
-     * Safe world position creation with validation
-     * @param x X coordinate
-     * @param y Y coordinate
-     * @param z Z coordinate
-     * @returns Position if valid, null otherwise
-     */
-    //% weight=3
-    //% blockId=coordinatesSafeWorld
-    //% block="safe world position X $x Y $y Z $z"
-    //% x.defl=0 y.defl=64 z.defl=0
-    //% advanced=true
-    //% group="Coordinate Utilities"
     function safeWorld(x: number, y: number, z: number): Position | null {
         const normalizedX = normalizeCoordinate(x);
         const normalizedY = normalizeCoordinate(y);
@@ -63,12 +56,62 @@ namespace coordinates {
         }
         return null;
     }
+    
     /**
-     * Calculate positions along a bezier curve with variable number of control points.
-     * @param startPoint Starting position of the curve
-     * @param controlPoints Array of control points that influence the curve shape
-     * @param endPoint Ending position of the curve
-     * @returns Array of positions along the curve
+     * Display progress message at specified intervals
+     * @param currentCount Current processing count
+     * @param messagePrefix Message prefix for display
+     */
+    function showProgressMessage(currentCount: number, messagePrefix: string): void {
+        if (currentCount % GENERATION_MESSAGE_INTERVAL === 0 && currentCount > 0) {
+            const count = Math.floor(currentCount / GENERATION_MESSAGE_INTERVAL) * GENERATION_MESSAGE_INTERVAL;
+            player.say(`${messagePrefix} ${count} blocks`);
+        }
+    }
+    
+    /**
+     * Calculate Euclidean distance in 3D space
+     * @param x1 Point 1 X coordinate
+     * @param y1 Point 1 Y coordinate
+     * @param z1 Point 1 Z coordinate
+     * @param x2 Point 2 X coordinate
+     * @param y2 Point 2 Y coordinate
+     * @param z2 Point 2 Z coordinate
+     * @returns Euclidean distance between the two points
+     */
+    function calculateDistance(x1: number, y1: number, z1: number, x2: number, y2: number, z2: number): number {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const dz = z2 - z1;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+    
+    /**
+     * Common logic for block placement determination (spherical/hollow detection)
+     * @param distance Distance from center
+     * @param radius Radius value
+     * @param hollow Hollow flag
+     * @returns Whether block should be placed
+     */
+    function shouldPlaceBlock(distance: number, radius: number, hollow: boolean): boolean {
+        if (hollow) {
+            return distance <= radius && distance >= Math.max(0, radius - 1);
+        } else {
+            return distance <= radius;
+        }
+    }
+    
+    /**
+     * Density sampling determination
+     * @param densityFactor Density coefficient (0.1-1.0)
+     * @returns Whether block should be placed based on density sampling
+     */
+    function passesDensitySampling(densityFactor: number): boolean {
+        if (densityFactor <= 0) return false;
+        return densityFactor >= 1.0 || Math.random() < densityFactor;
+    }
+    /**
+     * Calculate positions for a variable bezier curve with multiple control points
      */
     //% weight=8
     //% blockId=minecraftGetVariableBezierCurvePositions
@@ -78,18 +121,16 @@ namespace coordinates {
     //% endPoint.shadow=minecraftCreateWorldInternal
     //% group="Curves"
     export function getVariableBezierCurvePositions(startPoint: Position, controlPoints: Position[], endPoint: Position): Position[] {
-        // 全制御点を結合（開始 + 制御点配列 + 終了）
-        const 全制御点: Position[] = [startPoint];
+        const allControlPoints: Position[] = [startPoint];
         for (let i = 0; i < controlPoints.length; i++) {
-            全制御点.push(controlPoints[i]);
+            allControlPoints.push(controlPoints[i]);
         }
-        全制御点.push(endPoint);
+        allControlPoints.push(endPoint);
 
-        const n = 全制御点.length - 1; // 次数
+        const n = allControlPoints.length - 1;
         const positionsArr: Position[] = [];
 
-        // 二項係数の計算
-        function 二項係数(n: number, k: number): number {
+        function binomialCoeff(n: number, k: number): number {
             if (k > n) return 0;
             if (k === 0 || k === n) return 1;
 
@@ -100,38 +141,34 @@ namespace coordinates {
             return result;
         }
 
-        // n次ベジェ曲線上の位置を計算する内部関数
-        function ベジェ計算(t: number): Position {
+        function bezierCalculation(t: number): Position {
             let x = 0, y = 0, z = 0;
 
             for (let i = 0; i <= n; i++) {
-                // ベルンシュタイン基底多項式: B_i,n(t) = C(n,i) * (1-t)^(n-i) * t^i
-                const 係数 = 二項係数(n, i) * Math.pow(1 - t, n - i) * Math.pow(t, i);
-                x += 係数 * 全制御点[i].getValue(Axis.X);
-                y += 係数 * 全制御点[i].getValue(Axis.Y);
-                z += 係数 * 全制御点[i].getValue(Axis.Z);
+                const coeff = binomialCoeff(n, i) * Math.pow(1 - t, n - i) * Math.pow(t, i);
+                x += coeff * allControlPoints[i].getValue(Axis.X);
+                y += coeff * allControlPoints[i].getValue(Axis.Y);
+                z += coeff * allControlPoints[i].getValue(Axis.Z);
             }
 
             return world(Math.round(x), Math.round(y), Math.round(z));
         }
 
-        // 効率的な座標収集アルゴリズム
-        let 前回位置 = ベジェ計算(0);
-        positionsArr.push(前回位置);
+        let previousPos = bezierCalculation(0);
+        positionsArr.push(previousPos);
 
         let t = 0;
-        const ステップ幅 = 0.01; // 適度なステップサイズ
+        const stepSize = 0.01;
 
         while (t < 1.0) {
-            t += ステップ幅;
+            t += stepSize;
             if (t > 1.0) t = 1.0;
 
-            const 次位置 = ベジェ計算(t);
+            const nextPos = bezierCalculation(t);
 
-            // 座標が変わった場合のみ配列に追加
-            if (前回位置 && !positions.equals(前回位置, 次位置)) {
-                positionsArr.push(次位置);
-                前回位置 = 次位置;
+            if (previousPos && !positions.equals(previousPos, nextPos)) {
+                positionsArr.push(nextPos);
+                previousPos = nextPos;
             }
 
             if (t >= 1.0) break;
@@ -141,13 +178,7 @@ namespace coordinates {
     }
 
     /**
-     * Helper function: Calculate positions for a circle (MCP Server optimized)
-     * @param center Center position of the circle
-     * @param radius Radius of the circle
-     * @param axis Circle orientation (X, Y, or Z axis)
-     * @param offset Offset along the axis
-     * @param hollow Whether to create a hollow circle (outline only)
-     * @returns Array of positions forming the circle
+     * Optimized circle position calculation
      */
     function getCirclePositionsOptimized(center: Position, radius: number, axis: Axis, offset: number = 0, hollow: boolean = false): Position[] {
         const positions: Position[] = [];
@@ -159,7 +190,7 @@ namespace coordinates {
         const innerRadius = hollow ? Math.max(0, radiusInt - 1) : 0;
         const innerRadiusSquared = innerRadius * innerRadius;
 
-        // MCP Server式効率的円形生成
+        // Efficient circle generation algorithm
         for (let dx = -radiusInt; dx <= radiusInt; dx++) {
             const dxSquared = dx * dx;
             if (dxSquared > radiusSquared) continue;
@@ -193,13 +224,13 @@ namespace coordinates {
     }
 
     /**
-     * Calculate positions for a cylinder using optimized building algorithm
-     * @param center Center position of the cylinder base
-     * @param radius Radius of the cylinder (1-50 blocks)
-     * @param height Height of the cylinder (1-100 blocks)
-     * @param hollow Whether to create a hollow cylinder (default: false)
-     * @param layers Maximum number of layers to generate (0 = all layers, default: 0)
-     * @returns Array of positions forming the cylinder with enhanced performance
+     * 円柱形座標の計算（最適化アルゴリズム使用）
+     * @param center 円柱の底面中心点
+     * @param radius 円柱の半径 (1-200ブロック)
+     * @param height 円柱の高さ (1-300ブロック)
+     * @param hollow 中空円柱を作成するか (デフォルト: false)
+     * @param layers 生成する最大レイヤー数 (0 = 全レイヤー, デフォルト: 0)
+     * @returns 高性能で円柱を構成する座標配列
      */
     //% weight=20
     //% blockId=minecraftGetCylinderPositions
@@ -217,7 +248,8 @@ namespace coordinates {
         const layersInt = layers > 0 ? Math.min(layers, heightInt) : heightInt;
         const positions: Position[] = [];
 
-        // MCP Server式レイヤー分割アルゴリズム（高効率）
+        // Optimized layer division algorithm
+        player.say(MESSAGES.GENERATING);
         for (let i = 0; i < layersInt; i++) {
             const layerCenter = world(
                 center.getValue(Axis.X),
@@ -225,27 +257,33 @@ namespace coordinates {
                 center.getValue(Axis.Z)
             );
             
-            // 各レイヤーで最適化された円形を生成
+            // Generate optimized circle for each layer
             const circlePositions = getCirclePositionsOptimized(layerCenter, radiusInt, Axis.Y, 0, hollow);
-            // MakeCode互換のスプレッド演算子代替
+            // MakeCode compatible array spread alternative
             for (const pos of circlePositions) {
                 positions.push(pos);
-                if (positions.length % GENERATION_MESSAGE_INTERVAL === 0) {
-                    player.say("生成中...");
-                }
+                
+                // バッチ処理：BATCH_SIZEに達したら配置
+                
+                showProgressMessage(positions.length, MESSAGES.GENERATING);
             }
         }
+        
 
         return positions;
     }
 
+    // ==============================
+    // 複雑・高度な3Dシェイプ生成系関数
+    // ==============================
+    
     /**
-     * Calculate positions for a cone
-     * @param center Center position of the cone base
-     * @param radius Radius of the cone base
-     * @param height Height of the cone
-     * @param hollow Whether to create a hollow cone (default: false)
-     * @returns Array of positions forming the cone
+     * 円錐形座標の計算
+     * @param center 円錐の底面中心点
+     * @param radius 円錐の底面半径
+     * @param height 円錐の高さ
+     * @param hollow 中空円錐を作成するか (デフォルト: false)
+     * @returns 円錐を構成する座標配列
      */
     //% weight=19
     //% blockId=minecraftGetConePositions
@@ -396,16 +434,16 @@ namespace coordinates {
 
         // MCP Server式正規化距離計算（シンプルで高効率）
         const maxRadius = Math.max(Math.max(radiusXInt, radiusYInt), radiusZInt);
+        player.say(MESSAGES.GENERATING);
         
         for (let x = centerX - maxRadius; x <= centerX + maxRadius; x++) {
             for (let y = centerY - maxRadius; y <= centerY + maxRadius; y++) {
                 for (let z = centerZ - maxRadius; z <= centerZ + maxRadius; z++) {
-                    // 正規化距離計算（MCPサーバー方式）
-                    const normalizedDistance = Math.sqrt(
-                        Math.pow((x - centerX) / radiusXInt, 2) +
-                        Math.pow((y - centerY) / radiusYInt, 2) +
-                        Math.pow((z - centerZ) / radiusZInt, 2)
-                    );
+                    // Normalized distance calculation (MCP Server method)
+                    const dx = (x - centerX) / radiusXInt;
+                    const dy = (y - centerY) / radiusYInt;
+                    const dz = (z - centerZ) / radiusZInt;
+                    const normalizedDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
                     
                     let shouldPlace = false;
                     
@@ -419,22 +457,21 @@ namespace coordinates {
                     
                     if (shouldPlace && validateCoordinates(x, y, z)) {
                         positions.push(world(x, y, z));
-                        if (positions.length % GENERATION_MESSAGE_INTERVAL === 0) {
-                            player.say("生成中...");
-                        }
+                        showProgressMessage(positions.length, MESSAGES.GENERATING);
                     }
                 }
             }
         }
+        
 
         return positions;
     }
 
     /**
-     * Calculate positions for a line between two points using 3D Bresenham algorithm
-     * @param p0 Starting position of the line
-     * @param p1 Ending position of the line
-     * @returns Array of positions forming the line
+     * 2点間の直線座標計算（3D Bresenhamアルゴリズム使用）
+     * @param p0 直線の開始点
+     * @param p1 直線の終了点
+     * @returns 直線を構成する座標配列
      */
     //% weight=100
     //% blockId=minecraftGetLinePositions
@@ -542,8 +579,8 @@ namespace coordinates {
         const heightInt = Math.round(height);
         const direction = clockwise ? 1 : -1;
 
-        // MCP Server式弧長ベース密度計算（連続性重視）
-        const circumference = 2 * 3.14159 * radiusInt; // Math.PI → 3.14159
+        // MCP Server arc length-based density calculation (continuity priority)
+        const circumference = MATH_CONSTANTS.TWO_PI * radiusInt;
         const totalArcLength = circumference * turns;
         const helixLength = Math.sqrt(totalArcLength * totalArcLength + heightInt * heightInt);
         const steps = Math.max(heightInt * 2, Math.round(helixLength)); // 連続性を保つ密度
@@ -553,7 +590,7 @@ namespace coordinates {
 
         for (let i = 0; i <= steps; i++) {
             const progress = i / steps;
-            const angle = (turns * 2 * 3.14159) * progress * direction; // Math.PI → 3.14159
+            const angle = (turns * MATH_CONSTANTS.TWO_PI) * progress * direction;
             const currentHeight = heightInt * progress;
 
             // 螺旋の3D座標計算（MCPサーバー方式）
@@ -713,7 +750,7 @@ namespace coordinates {
     }
 
     /**
-     * Calculate positions for a circle
+     * Calculate positions for a circle (public function)
      * @param center Center position of the circle
      * @param radius Radius of the circle
      * @param orientation Circle orientation (X, Y, or Z axis)
@@ -793,12 +830,12 @@ namespace coordinates {
     }
 
     /**
-     * Calculate positions for a sphere using optimized building algorithm
+     * Calculate sphere positions using optimized algorithm
      * @param center Center position of the sphere
-     * @param radius Radius of the sphere (1-50 blocks)
-     * @param hollow Whether to create a hollow sphere (shell only)
-     * @param density Density factor for position sampling (0.1-1.0, default: 1.0)
-     * @returns Array of positions forming the sphere with enhanced performance
+     * @param radius Sphere radius (1-200 blocks)
+     * @param hollow Whether to create a hollow sphere (surface only)
+     * @param density Density sampling factor (0.1-1.0, default: 1.0)
+     * @returns High-performance array of positions forming the sphere
      */
     //% weight=90
     //% blockId=minecraftGetSpherePositions
@@ -810,49 +847,37 @@ namespace coordinates {
     //% expandableArgumentMode="toggle"
     //% group="3D Shapes (Optimized)"
     export function getSpherePositions(center: Position, radius: number, hollow: boolean = false, density: number = 1.0): Position[] {
+        // Parameter validation
+        if (!center) {
+            return [];
+        }
+        if (radius <= 0) {
+            return [];
+        }
+        
         const positions: Position[] = [];
         const centerX = normalizeCoordinate(center.getValue(Axis.X));
         const centerY = normalizeCoordinate(center.getValue(Axis.Y));
         const centerZ = normalizeCoordinate(center.getValue(Axis.Z));
-        const radiusInt = Math.max(1, Math.round(radius));
+        const radiusInt = Math.max(1, Math.round(Math.abs(radius)));
         const radiusSquared = radiusInt * radiusInt;
-        const densityFactor = Math.max(0.1, Math.min(1.0, density));
+        const densityFactor = Math.max(0.1, Math.min(1.0, Math.abs(density)));
 
-        // MCP Server式球体アルゴリズム（最適化済み）
+        // 最適化済み球体アルゴリズム
+        player.say(MESSAGES.GENERATING);
         for (let x = centerX - radiusInt; x <= centerX + radiusInt; x++) {
             for (let y = centerY - radiusInt; y <= centerY + radiusInt; y++) {
                 for (let z = centerZ - radiusInt; z <= centerZ + radiusInt; z++) {
-                    const distance = Math.sqrt(
-                        Math.pow(x - centerX, 2) + 
-                        Math.pow(y - centerY, 2) + 
-                        Math.pow(z - centerZ, 2)
-                    );
+                    const distance = calculateDistance(x, y, z, centerX, centerY, centerZ);
                     
-                    let shouldPlace = false;
-                    
-                    if (hollow) {
-                        // 中空の球体：表面のみ（MCPサーバー方式）
-                        shouldPlace = distance <= radiusInt && distance >= radiusInt - 1;
-                    } else {
-                        // 実体の球体：内部も含む
-                        shouldPlace = distance <= radiusInt;
-                    }
-                    
-                    if (shouldPlace) {
-                        // 密度サンプリング
-                        if (densityFactor >= 1.0 || Math.random() < densityFactor) {
-                            if (validateCoordinates(x, y, z)) {
-                                positions.push(world(x, y, z));
-                                if (positions.length % GENERATION_MESSAGE_INTERVAL === 0) {
-                                    player.say("生成中...");
-                                }
-                            }
-                        }
+                    if (shouldPlaceBlock(distance, radiusInt, hollow) && passesDensitySampling(densityFactor)) {
+                        positions.push(world(x, y, z));
+                        showProgressMessage(positions.length, MESSAGES.GENERATING);
                     }
                 }
             }
         }
-
+        
         return positions;
     }
 
@@ -919,11 +944,61 @@ namespace coordinates {
         return positions;
     }
 
+    // ==============================
+    // 最適化されたブロック配置システム
+    // ==============================
+    
     /**
-     * High-speed block placement using optimized fill operations
-     * Automatically detects rectangular regions for maximum efficiency
-     * @param positions Array of positions to fill with blocks
-     * @param block Block type to place
+     * 座標配列から一意な座標値を取得（MakeCode互換）
+     * @param positions 座標配列
+     * @param axis 取得する軸 ('x', 'y', 'z')
+     * @returns ソートされた一意座標配列
+     */
+    function getUniqueCoordinates(positions: Position[], axis: 'x' | 'y' | 'z'): number[] {
+        const coords: number[] = [];
+        const axisType = axis === 'x' ? Axis.X : axis === 'y' ? Axis.Y : Axis.Z;
+        
+        for (const pos of positions) {
+            const coord = pos.getValue(axisType);
+            if (coords.indexOf(coord) === -1) {
+                coords.push(coord);
+            }
+        }
+        return coords.sort((a, b) => a - b);
+    }
+    
+    /**
+     * ブロック存在チェック用ユーティリティクラス（MakeCode互換）
+     */
+    class BlockExistenceChecker {
+        private blockKeys: string[] = [];
+        
+        constructor(positions: Position[]) {
+            for (const pos of positions) {
+                const key = `${pos.getValue(Axis.X)},${pos.getValue(Axis.Y)},${pos.getValue(Axis.Z)}`;
+                if (this.blockKeys.indexOf(key) === -1) {
+                    this.blockKeys.push(key);
+                }
+            }
+        }
+        
+        hasBlock(x: number, y: number, z: number): boolean {
+            return this.blockKeys.indexOf(`${x},${y},${z}`) !== -1;
+        }
+        
+        removeBlock(x: number, y: number, z: number): void {
+            const key = `${x},${y},${z}`;
+            const index = this.blockKeys.indexOf(key);
+            if (index !== -1) {
+                this.blockKeys.splice(index, 1);
+            }
+        }
+    }
+    
+    /**
+     * 高速ブロック配置（貪欲アルゴリズム使用）
+     * @param positions 配置する座標配列
+     * @param block 配置するブロックタイプ
      */
     //% weight=200
     //% blockId=coordinatesOptimizedFill
@@ -932,77 +1007,28 @@ namespace coordinates {
     export function optimizedFill(positions: Position[], block: number): void {
         if (positions.length === 0) return;
         
-
-        // MakeCode互換の重複除去（高速化）
-        const uniquePositions: Position[] = [];
-        const seenKeys: string[] = [];
+        // 座標をソートしてグリッド化
+        const xs = getUniqueCoordinates(positions, 'x');
+        const ys = getUniqueCoordinates(positions, 'y');
+        const zs = getUniqueCoordinates(positions, 'z');
         
-        player.say("重複除去中...");
-        for (let i = 0; i < positions.length; i++) {
-            const pos = positions[i];
-            const key = `${pos.getValue(Axis.X)},${pos.getValue(Axis.Y)},${pos.getValue(Axis.Z)}`;
-            if (seenKeys.indexOf(key) === -1) {
-                seenKeys.push(key);
-                uniquePositions.push(pos);
-            }
-        }
-
-        // 座標軸の値を効率的に抽出
-        function getUniqueCoords(positions: Position[], axis: Axis): number[] {
-            const coords: number[] = [];
-            for (const pos of positions) {
-                const coord = pos.getValue(axis);
-                if (coords.indexOf(coord) === -1) {
-                    coords.push(coord);
-                }
-            }
-            return coords.sort((a, b) => a - b);
-        }
-
-        const xs = getUniqueCoords(uniquePositions, Axis.X);
-        const ys = getUniqueCoords(uniquePositions, Axis.Y);
-        const zs = getUniqueCoords(uniquePositions, Axis.Z);
+        // ブロック存在チェッカーを初期化
+        const blockChecker = new BlockExistenceChecker(positions);
         
-        
-        // 3次元ブール配列でブロック存在を高速管理
-        const blockExists: boolean[][][] = [];
-        
-        // 配列初期化
-        for (let x = 0; x < xs.length; x++) {
-            blockExists[x] = [];
-            for (let y = 0; y < ys.length; y++) {
-                blockExists[x][y] = [];
-                for (let z = 0; z < zs.length; z++) {
-                    blockExists[x][y][z] = false;
-                }
-            }
-        }
-        
-        // ブロック位置をマップに記録
-        for (const pos of uniquePositions) {
-            const xIdx = xs.indexOf(pos.getValue(Axis.X));
-            const yIdx = ys.indexOf(pos.getValue(Axis.Y));
-            const zIdx = zs.indexOf(pos.getValue(Axis.Z));
-            if (xIdx !== -1 && yIdx !== -1 && zIdx !== -1) {
-                blockExists[xIdx][yIdx][zIdx] = true;
-            }
-        }
-        
-        // 貪欲アルゴリズムで最大直方体を検出
-        player.say("最適化中...");
+        // 貪欲アルゴリズムで最大直方体を検出してfill操作で効率的に配置
         for (let x1 = 0; x1 < xs.length; x1++) {
             for (let y1 = 0; y1 < ys.length; y1++) {
                 for (let z1 = 0; z1 < zs.length; z1++) {
-                    if (!blockExists[x1][y1][z1]) continue;
+                    if (!blockChecker.hasBlock(xs[x1], ys[y1], zs[z1])) continue;
                     
                     let maxX = x1, maxY = y1, maxZ = z1;
                     
-                    // X方向拡張
+                    // X方向への直方体拡張
                     for (let x2 = x1; x2 < xs.length; x2++) {
                         let canExpand = true;
                         for (let y = y1; y <= maxY && canExpand; y++) {
                             for (let z = z1; z <= maxZ && canExpand; z++) {
-                                if (!blockExists[x2][y][z]) {
+                                if (!blockChecker.hasBlock(xs[x2], ys[y], zs[z])) {
                                     canExpand = false;
                                 }
                             }
@@ -1011,12 +1037,12 @@ namespace coordinates {
                         else break;
                     }
                     
-                    // Y方向拡張
+                    // Y方向への直方体拡張
                     for (let y2 = y1; y2 < ys.length; y2++) {
                         let canExpand = true;
                         for (let x = x1; x <= maxX && canExpand; x++) {
                             for (let z = z1; z <= maxZ && canExpand; z++) {
-                                if (!blockExists[x][y2][z]) {
+                                if (!blockChecker.hasBlock(xs[x], ys[y2], zs[z])) {
                                     canExpand = false;
                                 }
                             }
@@ -1025,12 +1051,12 @@ namespace coordinates {
                         else break;
                     }
                     
-                    // Z方向拡張
+                    // Z方向への直方体拡張
                     for (let z2 = z1; z2 < zs.length; z2++) {
                         let canExpand = true;
                         for (let x = x1; x <= maxX && canExpand; x++) {
                             for (let y = y1; y <= maxY && canExpand; y++) {
-                                if (!blockExists[x][y][z2]) {
+                                if (!blockChecker.hasBlock(xs[x], ys[y], zs[z2])) {
                                     canExpand = false;
                                 }
                             }
@@ -1039,24 +1065,22 @@ namespace coordinates {
                         else break;
                     }
                     
-                    // 最適化されたfill操作実行
+                    // 最適化blocks.fill操作で直方体を一度に配置
                     const fromPos = world(xs[x1], ys[y1], zs[z1]);
                     const toPos = world(xs[maxX], ys[maxY], zs[maxZ]);
-                    blocks.fill(block, fromPos, toPos);
+                    blocks.fill(block, fromPos, toPos, FillOperation.Replace);
                     
-                    // 処理済み領域をクリア
+                    // 使用済みブロックのマーキング
                     for (let x = x1; x <= maxX; x++) {
                         for (let y = y1; y <= maxY; y++) {
                             for (let z = z1; z <= maxZ; z++) {
-                                blockExists[x][y][z] = false;
+                                blockChecker.removeBlock(xs[x], ys[y], zs[z]);
                             }
                         }
                     }
                 }
             }
         }
-        
-        player.say("配置完了!");
     }
 
 }

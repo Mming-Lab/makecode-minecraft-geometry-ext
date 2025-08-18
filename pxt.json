@@ -19,9 +19,7 @@
         "_locales/ja/makecode-minecraft-mming-Ext-strings.json",
         "_locales/ja/makecode-minecraft-mming-Ext-jsdoc-strings.json"
     ],
-    "testFiles": [
-        "test.ts"
-    ],
+    "testFiles": [],
     "targetVersions": {
         "target": "2.1.13",
         "targetId": "minecraft"

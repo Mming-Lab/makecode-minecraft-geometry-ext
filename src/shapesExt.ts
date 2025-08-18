@@ -1,7 +1,35 @@
-// 図形・形状生成用の拡張機能（最適化されたアルゴリズム使用）
-// シンプルな3D図形から複雑なベジェ曲線まで対応
+// Shape and form generation extension (using optimized algorithms)
+// Supports from simple 3D shapes to complex Bezier curves
 //% block="図形" weight=10 color=#FF6B35 icon="\uf1b2" advanced=true
 namespace shapes {
+    
+    // Using standard MakeCode ShapeOperation enum
+    // ShapeOperation.Replace, ShapeOperation.Outline, ShapeOperation.Hollow
+    
+    /**
+     * Place blocks in batches using coordinates.BATCH_SIZE for optimal performance
+     * @param positions Array of positions to place blocks at
+     * @param block Block type to place
+     * @param operation Shape operation type (Replace, Outline, Hollow)
+     */
+    function batchPlaceBlocks(positions: Position[], block: number, operation: ShapeOperation = ShapeOperation.Replace): void {
+        if (!positions || positions.length === 0) {
+            return;
+        }
+        
+        // Handle hollow operation by first placing air, then outline
+        if (operation === ShapeOperation.Hollow) {
+            // For hollow, we need to implement it at shape level, not here
+            // This is handled in individual shape functions
+        }
+        
+        for (let i = 0; i < positions.length; i += coordinates.BATCH_SIZE) {
+            const batch = positions.slice(i, i + coordinates.BATCH_SIZE);
+            const progress = Math.round(((i + batch.length) / positions.length) * 100);
+            player.say(`Placing ${progress}%`);
+            coordinates.optimizedFill(batch, block);
+        }
+    }
     /**
      * Place blocks along a bezier curve with variable number of control points.
      * Uses optimized curve generation algorithm for smooth results.
@@ -11,16 +39,14 @@ namespace shapes {
      * @param blockType Block type to place
      */
     //% weight=8
-    //% blockId=minecraftPlaceVariableBezierCurve
-    //% block="build optimized bezier curve with %block=minecraftBlock from $startPoint to $endPoint with control points $controlPoints"
+    //% blockId=minecraftVariableBezier
+    //% block="variable bezier of %block=minecraftBlock|from %startPoint=minecraftCreatePosition|to %endPoint=minecraftCreatePosition|with control points %controlPoints"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
-    //% startPoint.shadow=minecraftCreateWorldInternal
-    //% endPoint.shadow=minecraftCreateWorldInternal
     //% group="Lines and Curves"
-    export function PlaceVariableBezierCurve(startPoint: Position, controlPoints: Position[], endPoint: Position, block: number): void {
+    export function variableBezier(block: number, startPoint: Position, endPoint: Position, controlPoints: Position[]): void {
         const positions = coordinates.getVariableBezierCurvePositions(startPoint, controlPoints, endPoint);
-        coordinates.optimizedFill(positions, block);
+        batchPlaceBlocks(positions, block);
     }
 
     /**
@@ -30,15 +56,14 @@ namespace shapes {
      * @param block Block type to place
      */
     //% weight=100
-    //% blockId=minecraftCreateLine
-    //% block="build line with %block=minecraftBlock from $p0 to $p1"
+    //% blockId=minecraftOptimizedLine
+    //% block="optimized line of %block=minecraftBlock|from %p0=minecraftCreatePosition|to %p1=minecraftCreatePosition"
     //% block.shadow=minecraftBlock
-    //% p0.shadow=minecraftCreateWorldInternal
-    //% p1.shadow=minecraftCreateWorldInternal
+    //% blockExternalInputs=1
     //% group="Basic Shapes"
-    export function createLine(p0: Position, p1: Position, block: number): void {
+    export function optimizedLine(block: number, p0: Position, p1: Position): void {
         const positions = coordinates.getLinePositions(p0, p1);
-        coordinates.optimizedFill(positions, block);
+        batchPlaceBlocks(positions, block);
     }
 
     /**
@@ -50,17 +75,24 @@ namespace shapes {
      * @param hollow Whether to create a hollow circle (outline only)
      */
     //% weight=95
-    //% blockId=minecraftCreateCircle
-    //% block="build circle with %block=minecraftBlock at center $center radius $radius orientation $orientation || hollow $hollow"
+    //% blockId=minecraftOptimizedCircle
+    //% block="optimized circle of %block=minecraftBlock|center %center=minecraftCreatePosition|radius %radius|around %orientation|%operation"
     //% block.shadow=minecraftBlock
-    //% center.shadow=minecraftCreateWorldInternal
+    //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
-    //% hollow.shadow=toggleOnOff hollow.defl=false
-    //% expandableArgumentMode="toggle"
     //% group="Basic Shapes"
-    export function createCircle(center: Position, radius: number, orientation: Axis, block: number, hollow: boolean = false): void {
-        const positions = coordinates.getCirclePositions(center, radius, orientation, hollow);
-        coordinates.optimizedFill(positions, block);
+    export function optimizedCircle(block: number, center: Position, radius: number, orientation: Axis, operation: ShapeOperation = ShapeOperation.Replace): void {
+        if (operation === ShapeOperation.Hollow) {
+            // Create filled circle with air, then outline
+            const positions = coordinates.getCirclePositions(center, radius, orientation, false);
+            batchPlaceBlocks(positions, Block.Air);
+            const outlinePositions = coordinates.getCirclePositions(center, radius, orientation, true);
+            batchPlaceBlocks(outlinePositions, block);
+        } else {
+            const hollow = operation === ShapeOperation.Outline;
+            const positions = coordinates.getCirclePositions(center, radius, orientation, hollow);
+            batchPlaceBlocks(positions, block);
+        }
     }
 
     /**
@@ -72,18 +104,37 @@ namespace shapes {
      * @param density Density factor for position sampling (0.1-1.0, default: 1.0)
      */
     //% weight=90
-    //% blockId=minecraftCreateSphere
-    //% block="build optimized sphere with %block=minecraftBlock at center $center radius $radius || hollow $hollow density $density"
+    //% blockId=minecraftOptimizedSphere
+    //% block="optimized sphere of %block=minecraftBlock|center %center=minecraftCreatePosition|radius %radius|%operation"
     //% block.shadow=minecraftBlock
-    //% center.shadow=minecraftCreateWorldInternal
+    //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
-    //% hollow.shadow=toggleOnOff hollow.defl=false
-    //% density.min=0.1 density.max=1.0 density.defl=1.0
-    //% expandableArgumentMode="toggle"
-    //% group="Spheres and Ellipsoids"
-    export function createSphere(center: Position, radius: number, block: number, hollow: boolean = false, density: number = 1.0): void {
-        const positions = coordinates.getSpherePositions(center, radius, hollow, density);
-        coordinates.optimizedFill(positions, block);
+    //% group="3D Shapes (Optimized)"
+    //% advanced=true
+    export function optimizedSphere(block: number, center: Position, radius: number, operation: ShapeOperation = ShapeOperation.Replace): void {
+        // Parameter validation
+        if (!center) {
+            player.say("Error: Invalid center position");
+            return;
+        }
+        if (radius <= 0) {
+            player.say("Error: Radius must be positive");
+            return;
+        }
+        
+        const density = 1.0; // Fixed density for standard compatibility
+        
+        if (operation === ShapeOperation.Hollow) {
+            // Create filled sphere with air, then shell
+            const filledPositions = coordinates.getSpherePositions(center, radius, false, density);
+            batchPlaceBlocks(filledPositions, Block.Air);
+            const shellPositions = coordinates.getSpherePositions(center, radius, true, density);
+            batchPlaceBlocks(shellPositions, block);
+        } else {
+            const hollow = operation === ShapeOperation.Outline;
+            const positions = coordinates.getSpherePositions(center, radius, hollow, density);
+            batchPlaceBlocks(positions, block);
+        }
     }
 
     /**
@@ -94,17 +145,22 @@ namespace shapes {
      * @param hollow Whether to create a hollow cuboid (shell only)
      */
     //% weight=85
-    //% blockId=minecraftCreateCuboid
-    //% block="build cuboid with %block=minecraftBlock from corner $corner1 to corner $corner2 || hollow $hollow"
+    //% blockId=minecraftCuboid
+    //% block="cuboid of %block=minecraftBlock|from %corner1=minecraftCreatePosition|to %corner2=minecraftCreatePosition|%operation"
     //% block.shadow=minecraftBlock
-    //% corner1.shadow=minecraftCreateWorldInternal
-    //% corner2.shadow=minecraftCreateWorldInternal
-    //% hollow.shadow=toggleOnOff hollow.defl=false
-    //% expandableArgumentMode="toggle"
-    //% group="Solid Shapes"
-    export function createCuboid(corner1: Position, corner2: Position, block: number, hollow: boolean = false): void {
-        const positions = coordinates.getCuboidPositions(corner1, corner2, hollow);
-        coordinates.optimizedFill(positions, block);
+    //% blockExternalInputs=1
+    //% group="3D Shapes (Basic)"
+    export function cuboid(block: number, corner1: Position, corner2: Position, operation: ShapeOperation = ShapeOperation.Replace): void {
+        if (operation === ShapeOperation.Hollow) {
+            const filledPositions = coordinates.getCuboidPositions(corner1, corner2, false);
+            batchPlaceBlocks(filledPositions, Block.Air);
+            const shellPositions = coordinates.getCuboidPositions(corner1, corner2, true);
+            batchPlaceBlocks(shellPositions, block);
+        } else {
+            const hollow = operation === ShapeOperation.Outline;
+            const positions = coordinates.getCuboidPositions(corner1, corner2, hollow);
+            batchPlaceBlocks(positions, block);
+        }
     }
 
     /**
@@ -115,19 +171,25 @@ namespace shapes {
      * @param block Block type to place
      * @param hollow Whether to create a hollow cylinder (default: false)
      */
-    //% weight=20
-    //% blockId=minecraftCreateCylinder
-    //% block="build optimized cylinder with %block=minecraftBlock at center $center radius $radius height $height || hollow $hollow"
+    //% weight=80
+    //% blockId=minecraftCylinder
+    //% block="cylinder of %block=minecraftBlock|center %center=minecraftCreatePosition|radius %radius|height %height|%operation"
     //% block.shadow=minecraftBlock
-    //% center.shadow=minecraftCreateWorldInternal
+    //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
     //% height.min=1 height.max=300 height.defl=10
-    //% hollow.shadow=toggleOnOff hollow.defl=false
-    //% expandableArgumentMode="toggle"
-    //% group="Spheres and Ellipsoids"
-    export function createCylinder(center: Position, radius: number, height: number, block: number, hollow: boolean = false): void {
-        const positions = coordinates.getCylinderPositions(center, radius, height, hollow);
-        coordinates.optimizedFill(positions, block);
+    //% group="3D Shapes (Optimized)"
+    export function cylinder(block: number, center: Position, radius: number, height: number, operation: ShapeOperation = ShapeOperation.Replace): void {
+        if (operation === ShapeOperation.Hollow) {
+            const filledPositions = coordinates.getCylinderPositions(center, radius, height, false);
+            batchPlaceBlocks(filledPositions, Block.Air);
+            const shellPositions = coordinates.getCylinderPositions(center, radius, height, true);
+            batchPlaceBlocks(shellPositions, block);
+        } else {
+            const hollow = operation === ShapeOperation.Outline;
+            const positions = coordinates.getCylinderPositions(center, radius, height, hollow);
+            batchPlaceBlocks(positions, block);
+        }
     }
 
     /**
@@ -138,19 +200,25 @@ namespace shapes {
      * @param block Block type to place
      * @param hollow Whether to create a hollow cone (default: false)
      */
-    //% weight=19
-    //% blockId=minecraftCreateCone
-    //% block="build cone with %block=minecraftBlock at center $center radius $radius height $height || hollow $hollow"
+    //% weight=75
+    //% blockId=minecraftCone
+    //% block="cone of %block=minecraftBlock|center %center=minecraftCreatePosition|radius %radius|height %height|%operation"
     //% block.shadow=minecraftBlock
-    //% center.shadow=minecraftCreateWorldInternal
+    //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
     //% height.min=1 height.max=300 height.defl=10
-    //% hollow.shadow=toggleOnOff hollow.defl=false
-    //% expandableArgumentMode="toggle"
-    //% group="Solid Shapes"
-    export function createCone(center: Position, radius: number, height: number, block: number, hollow: boolean = false): void {
-        const positions = coordinates.getConePositions(center, radius, height, hollow);
-        coordinates.optimizedFill(positions, block);
+    //% group="3D Shapes (Basic)"
+    export function cone(block: number, center: Position, radius: number, height: number, operation: ShapeOperation = ShapeOperation.Replace): void {
+        if (operation === ShapeOperation.Hollow) {
+            const filledPositions = coordinates.getConePositions(center, radius, height, false);
+            batchPlaceBlocks(filledPositions, Block.Air);
+            const shellPositions = coordinates.getConePositions(center, radius, height, true);
+            batchPlaceBlocks(shellPositions, block);
+        } else {
+            const hollow = operation === ShapeOperation.Outline;
+            const positions = coordinates.getConePositions(center, radius, height, hollow);
+            batchPlaceBlocks(positions, block);
+        }
     }
 
     /**
@@ -161,19 +229,25 @@ namespace shapes {
      * @param block Block type to place
      * @param hollow Whether to create a hollow torus (default: false)
      */
-    //% weight=18
-    //% blockId=minecraftCreateTorus
-    //% block="build torus with %block=minecraftBlock at center $center major radius $majorRadius minor radius $minorRadius || hollow $hollow"
+    //% weight=70
+    //% blockId=minecraftTorus
+    //% block="torus of %block=minecraftBlock|center %center=minecraftCreatePosition|major radius %majorRadius|minor radius %minorRadius|%operation"
     //% block.shadow=minecraftBlock
-    //% center.shadow=minecraftCreateWorldInternal
+    //% blockExternalInputs=1
     //% majorRadius.min=3 majorRadius.max=200 majorRadius.defl=8
     //% minorRadius.min=1 minorRadius.max=100 minorRadius.defl=3
-    //% hollow.shadow=toggleOnOff hollow.defl=false
-    //% expandableArgumentMode="toggle"
     //% group="Complex Shapes"
-    export function createTorus(center: Position, majorRadius: number, minorRadius: number, block: number, hollow: boolean = false): void {
-        const positions = coordinates.getTorusPositions(center, majorRadius, minorRadius, hollow);
-        coordinates.optimizedFill(positions, block);
+    export function torus(block: number, center: Position, majorRadius: number, minorRadius: number, operation: ShapeOperation = ShapeOperation.Replace): void {
+        if (operation === ShapeOperation.Hollow) {
+            const filledPositions = coordinates.getTorusPositions(center, majorRadius, minorRadius, false);
+            batchPlaceBlocks(filledPositions, Block.Air);
+            const shellPositions = coordinates.getTorusPositions(center, majorRadius, minorRadius, true);
+            batchPlaceBlocks(shellPositions, block);
+        } else {
+            const hollow = operation === ShapeOperation.Outline;
+            const positions = coordinates.getTorusPositions(center, majorRadius, minorRadius, hollow);
+            batchPlaceBlocks(positions, block);
+        }
     }
 
 
@@ -186,20 +260,26 @@ namespace shapes {
      * @param block Block type to place
      * @param hollow Whether to create a hollow ellipsoid (default: false)
      */
-    //% weight=17
-    //% blockId=minecraftCreateEllipsoid
-    //% block="build optimized ellipsoid with %block=minecraftBlock at center $center X radius $radiusX Y radius $radiusY Z radius $radiusZ || hollow $hollow"
+    //% weight=65
+    //% blockId=minecraftEllipsoid
+    //% block="ellipsoid of %block=minecraftBlock|center %center=minecraftCreatePosition|X radius %radiusX|Y radius %radiusY|Z radius %radiusZ|%operation"
     //% block.shadow=minecraftBlock
-    //% center.shadow=minecraftCreateWorldInternal
+    //% blockExternalInputs=1
     //% radiusX.min=1 radiusX.max=200 radiusX.defl=5
     //% radiusY.min=1 radiusY.max=200 radiusY.defl=3
     //% radiusZ.min=1 radiusZ.max=200 radiusZ.defl=7
-    //% hollow.shadow=toggleOnOff hollow.defl=false
-    //% expandableArgumentMode="toggle"
-    //% group="Spheres and Ellipsoids"
-    export function createEllipsoid(center: Position, radiusX: number, radiusY: number, radiusZ: number, block: number, hollow: boolean = false): void {
-        const positions = coordinates.getEllipsoidPositions(center, radiusX, radiusY, radiusZ, hollow);
-        coordinates.optimizedFill(positions, block);
+    //% group="3D Shapes (Optimized)"
+    export function ellipsoid(block: number, center: Position, radiusX: number, radiusY: number, radiusZ: number, operation: ShapeOperation = ShapeOperation.Replace): void {
+        if (operation === ShapeOperation.Hollow) {
+            const filledPositions = coordinates.getEllipsoidPositions(center, radiusX, radiusY, radiusZ, false);
+            batchPlaceBlocks(filledPositions, Block.Air);
+            const shellPositions = coordinates.getEllipsoidPositions(center, radiusX, radiusY, radiusZ, true);
+            batchPlaceBlocks(shellPositions, block);
+        } else {
+            const hollow = operation === ShapeOperation.Outline;
+            const positions = coordinates.getEllipsoidPositions(center, radiusX, radiusY, radiusZ, hollow);
+            batchPlaceBlocks(positions, block);
+        }
     }
 
     /**
@@ -211,20 +291,20 @@ namespace shapes {
      * @param block Block type to place
      * @param clockwise Whether to rotate clockwise (default: true)
      */
-    //% weight=16
-    //% blockId=minecraftCreateHelix
-    //% block="build helix with %block=minecraftBlock at center $center radius $radius height $height turns $turns || clockwise $clockwise"
+    //% weight=60
+    //% blockId=minecraftHelix
+    //% block="helix of %block=minecraftBlock|center %center=minecraftCreatePosition|radius %radius|height %height|turns %turns||clockwise %clockwise"
     //% block.shadow=minecraftBlock
-    //% center.shadow=minecraftCreateWorldInternal
+    //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
     //% height.min=2 height.max=300 height.defl=20
     //% turns.min=0.5 turns.max=20 turns.defl=3
     //% clockwise.shadow=toggleOnOff clockwise.defl=true
     //% expandableArgumentMode="toggle"
     //% group="Complex Shapes"
-    export function createHelix(center: Position, radius: number, height: number, turns: number, block: number, clockwise: boolean = true): void {
+    export function helix(block: number, center: Position, radius: number, height: number, turns: number, clockwise: boolean = true): void {
         const positions = coordinates.getHelixPositions(center, radius, height, turns, clockwise);
-        coordinates.optimizedFill(positions, block);
+        batchPlaceBlocks(positions, block);
     }
 
     /**
@@ -235,19 +315,25 @@ namespace shapes {
      * @param block Block type to place
      * @param hollow Whether to create a hollow paraboloid (default: false)
      */
-    //% weight=15
-    //% blockId=minecraftCreateParaboloid
-    //% block="build paraboloid with %block=minecraftBlock at center $center radius $radius height $height || hollow $hollow"
+    //% weight=55
+    //% blockId=minecraftParaboloid
+    //% block="paraboloid of %block=minecraftBlock|center %center=minecraftCreatePosition|radius %radius|height %height|%operation"
     //% block.shadow=minecraftBlock
-    //% center.shadow=minecraftCreateWorldInternal
+    //% blockExternalInputs=1
     //% radius.min=2 radius.max=200 radius.defl=8
     //% height.min=1 height.max=300 height.defl=10
-    //% hollow.shadow=toggleOnOff hollow.defl=false
-    //% expandableArgumentMode="toggle"
     //% group="Complex Shapes"
-    export function createParaboloid(center: Position, radius: number, height: number, block: number, hollow: boolean = false): void {
-        const positions = coordinates.getParaboloidPositions(center, radius, height, hollow);
-        coordinates.optimizedFill(positions, block);
+    export function paraboloid(block: number, center: Position, radius: number, height: number, operation: ShapeOperation = ShapeOperation.Replace): void {
+        if (operation === ShapeOperation.Hollow) {
+            const filledPositions = coordinates.getParaboloidPositions(center, radius, height, false);
+            batchPlaceBlocks(filledPositions, Block.Air);
+            const shellPositions = coordinates.getParaboloidPositions(center, radius, height, true);
+            batchPlaceBlocks(shellPositions, block);
+        } else {
+            const hollow = operation === ShapeOperation.Outline;
+            const positions = coordinates.getParaboloidPositions(center, radius, height, hollow);
+            batchPlaceBlocks(positions, block);
+        }
     }
 
     /**
@@ -259,20 +345,26 @@ namespace shapes {
      * @param block Block type to place
      * @param hollow Whether to create a hollow hyperboloid (default: false)
      */
-    //% weight=14
-    //% blockId=minecraftCreateHyperboloid
-    //% block="build hyperboloid with %block=minecraftBlock at center $center base radius $baseRadius waist radius $waistRadius height $height || hollow $hollow"
+    //% weight=50
+    //% blockId=minecraftHyperboloid
+    //% block="hyperboloid of %block=minecraftBlock|center %center=minecraftCreatePosition|base radius %baseRadius|waist radius %waistRadius|height %height|%operation"
     //% block.shadow=minecraftBlock
-    //% center.shadow=minecraftCreateWorldInternal
+    //% blockExternalInputs=1
     //% baseRadius.min=3 baseRadius.max=200 baseRadius.defl=10
     //% waistRadius.min=1 waistRadius.max=100 waistRadius.defl=5
     //% height.min=4 height.max=300 height.defl=20
-    //% hollow.shadow=toggleOnOff hollow.defl=false
-    //% expandableArgumentMode="toggle"
     //% group="Complex Shapes"
-    export function createHyperboloid(center: Position, baseRadius: number, waistRadius: number, height: number, block: number, hollow: boolean = false): void {
-        const positions = coordinates.getHyperboloidPositions(center, baseRadius, waistRadius, height, hollow);
-        coordinates.optimizedFill(positions, block);
+    export function hyperboloid(block: number, center: Position, baseRadius: number, waistRadius: number, height: number, operation: ShapeOperation = ShapeOperation.Replace): void {
+        if (operation === ShapeOperation.Hollow) {
+            const filledPositions = coordinates.getHyperboloidPositions(center, baseRadius, waistRadius, height, false);
+            batchPlaceBlocks(filledPositions, Block.Air);
+            const shellPositions = coordinates.getHyperboloidPositions(center, baseRadius, waistRadius, height, true);
+            batchPlaceBlocks(shellPositions, block);
+        } else {
+            const hollow = operation === ShapeOperation.Outline;
+            const positions = coordinates.getHyperboloidPositions(center, baseRadius, waistRadius, height, hollow);
+            batchPlaceBlocks(positions, block);
+        }
     }
 
 }
