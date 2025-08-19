@@ -1,6 +1,6 @@
 // Shape and form generation extension (using optimized algorithms)
 // Supports from simple 3D shapes to complex Bezier curves
-//% block="図形" weight=10 color=#FF6B35 icon="\uf1b2" advanced=true
+
 namespace shapes {
     
     // Using standard MakeCode ShapeOperation enum
@@ -47,7 +47,7 @@ namespace shapes {
      * @param endPoint Ending position of the curve
      * @param blockType Block type to place
      */
-    //% weight=8
+    //% weight=51
     //% blockId=minecraftVariableBezier
     //% block="variable bezier of %block=minecraftBlock|from %startPoint=minecraftCreatePosition|to %endPoint=minecraftCreatePosition|with control points %controlPoints"
     //% block.shadow=minecraftBlock
@@ -118,8 +118,7 @@ namespace shapes {
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
-    //% group="3D Shapes (Optimized)"
-    //% advanced=true
+    //% group="3D Shapes Optimized"
     export function optimizedSphere(block: number, center: Position, radius: number, operation: ShapeOperation = ShapeOperation.Replace): void {
         // Parameter validation
         if (!center) {
@@ -158,7 +157,7 @@ namespace shapes {
     //% block="cuboid of %block=minecraftBlock|from %corner1=minecraftCreatePosition|to %corner2=minecraftCreatePosition|%operation"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
-    //% group="3D Shapes (Basic)"
+    //% group="3D Shapes Basic"
     export function cuboid(block: number, corner1: Position, corner2: Position, operation: ShapeOperation = ShapeOperation.Replace): void {
         if (operation === ShapeOperation.Hollow) {
             const filledPositions = coordinates.getCuboidPositions(corner1, corner2, false);
@@ -187,7 +186,7 @@ namespace shapes {
     //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
     //% height.min=1 height.max=300 height.defl=10
-    //% group="3D Shapes (Optimized)"
+    //% group="3D Shapes Optimized"
     export function cylinder(block: number, center: Position, radius: number, height: number, operation: ShapeOperation = ShapeOperation.Replace): void {
         if (operation === ShapeOperation.Hollow) {
             const filledPositions = coordinates.getCylinderPositions(center, radius, height, false);
@@ -216,7 +215,7 @@ namespace shapes {
     //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
     //% height.min=1 height.max=300 height.defl=10
-    //% group="3D Shapes (Basic)"
+    //% group="3D Shapes Basic"
     export function cone(block: number, center: Position, radius: number, height: number, operation: ShapeOperation = ShapeOperation.Replace): void {
         if (operation === ShapeOperation.Hollow) {
             const filledPositions = coordinates.getConePositions(center, radius, height, false);
@@ -277,7 +276,7 @@ namespace shapes {
     //% radiusX.min=1 radiusX.max=200 radiusX.defl=5
     //% radiusY.min=1 radiusY.max=200 radiusY.defl=3
     //% radiusZ.min=1 radiusZ.max=200 radiusZ.defl=7
-    //% group="3D Shapes (Optimized)"
+    //% group="3D Shapes Optimized"
     export function ellipsoid(block: number, center: Position, radiusX: number, radiusY: number, radiusZ: number, operation: ShapeOperation = ShapeOperation.Replace): void {
         if (operation === ShapeOperation.Hollow) {
             const filledPositions = coordinates.getEllipsoidPositions(center, radiusX, radiusY, radiusZ, false);
