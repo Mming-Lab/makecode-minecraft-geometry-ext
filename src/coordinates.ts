@@ -29,6 +29,9 @@ namespace coordinates {
         TWO_PI: 2 * 3.14159
     };
 
+    /** Progress reporting constants */
+    const PROGRESS_INTERVAL_COUNT = 1000;
+
     // ==============================
     // Coordinate utility functions
     // ==============================
@@ -97,6 +100,15 @@ namespace coordinates {
         if (densityFactor <= 0) return false;
         return densityFactor >= 1.0 || Math.random() < densityFactor;
     }
+
+    /**
+     * Get progress message with count
+     * @param count Current number of positions generated
+     * @returns Progress message string with count
+     */
+    function getProgressMessage(count: number): string {
+        return `${MESSAGES.GENERATING} (${count})`;
+    }
     /**
      * Calculate positions for a variable bezier curve with multiple control points
      */
@@ -155,6 +167,9 @@ namespace coordinates {
 
             if (previousPos && !positions.equals(previousPos, nextPos)) {
                 positionsArr.push(nextPos);
+                if (positionsArr.length % PROGRESS_INTERVAL_COUNT === 0) {
+                    player.say(getProgressMessage(positionsArr.length));
+                }
                 previousPos = nextPos;
             }
 
@@ -202,6 +217,9 @@ namespace coordinates {
                     
                     if (validateCoordinates(worldPos.getValue(Axis.X), worldPos.getValue(Axis.Y), worldPos.getValue(Axis.Z))) {
                         positions.push(worldPos);
+                        if (positions.length % PROGRESS_INTERVAL_COUNT === 0) {
+                            player.say(getProgressMessage(positions.length));
+                        }
                     }
                 }
             }
@@ -236,7 +254,7 @@ namespace coordinates {
         const positions: Position[] = [];
 
         // Optimized layer division algorithm
-        player.say(MESSAGES.GENERATING);
+        player.say(getProgressMessage(0));
         for (let i = 0; i < layersInt; i++) {
             const layerCenter = world(
                 center.getValue(Axis.X),
@@ -249,7 +267,9 @@ namespace coordinates {
             // MakeCode compatible array spread alternative
             for (const pos of circlePositions) {
                 positions.push(pos);
-                
+                if (positions.length % PROGRESS_INTERVAL_COUNT === 0) {
+                    player.say(getProgressMessage(positions.length));
+                }
             }
         }
         
@@ -311,6 +331,9 @@ namespace coordinates {
                             centerY + y,
                             centerZ + z
                         ));
+                        if (positions.length % PROGRESS_INTERVAL_COUNT === 0) {
+                            player.say(getProgressMessage(positions.length));
+                        }
                     }
                 }
             }
@@ -379,6 +402,9 @@ namespace coordinates {
                             centerY + y,
                             centerZ + z
                         ));
+                        if (positions.length % PROGRESS_INTERVAL_COUNT === 0) {
+                            player.say(getProgressMessage(positions.length));
+                        }
                     }
                 }
             }
@@ -418,7 +444,7 @@ namespace coordinates {
 
         // MCP Server式正規化距離計算（シンプルで高効率）
         const maxRadius = Math.max(Math.max(radiusXInt, radiusYInt), radiusZInt);
-        player.say(MESSAGES.GENERATING);
+        player.say(getProgressMessage(0));
         
         for (let x = centerX - maxRadius; x <= centerX + maxRadius; x++) {
             for (let y = centerY - maxRadius; y <= centerY + maxRadius; y++) {
@@ -441,6 +467,9 @@ namespace coordinates {
                     
                     if (shouldPlace && validateCoordinates(x, y, z)) {
                         positions.push(world(x, y, z));
+                        if (positions.length % PROGRESS_INTERVAL_COUNT === 0) {
+                            player.say(getProgressMessage(positions.length));
+                        }
                     }
                 }
             }
@@ -587,6 +616,9 @@ namespace coordinates {
                 seenPositions.push(posKey);
                 if (validateCoordinates(x, y, z)) {
                     positionsArr.push(world(x, y, z));
+                    if (positionsArr.length % PROGRESS_INTERVAL_COUNT === 0) {
+                        player.say(getProgressMessage(positionsArr.length));
+                    }
                 }
             }
         }
@@ -653,6 +685,9 @@ namespace coordinates {
                             centerY + y,
                             centerZ + z
                         ));
+                        if (positions.length % PROGRESS_INTERVAL_COUNT === 0) {
+                            player.say(getProgressMessage(positions.length));
+                        }
                     }
                 }
             }
@@ -724,6 +759,9 @@ namespace coordinates {
                             centerY + y,
                             centerZ + z
                         ));
+                        if (positions.length % PROGRESS_INTERVAL_COUNT === 0) {
+                            player.say(getProgressMessage(positions.length));
+                        }
                     }
                 }
             }
@@ -785,6 +823,9 @@ namespace coordinates {
                 positions.push(toWorld(-y, -x));
                 positions.push(toWorld(y, -x));
                 positions.push(toWorld(x, -y));
+                if (positions.length % PROGRESS_INTERVAL_COUNT === 0) {
+                    player.say(getProgressMessage(positions.length));
+                }
 
                 if (err <= 0) {
                     y += 1;
@@ -804,6 +845,9 @@ namespace coordinates {
                     const maxY = Math.floor(Math.sqrt(maxYSquared));
                     for (let y = -maxY; y <= maxY; y++) {
                         positions.push(toWorld(x, y));
+                        if (positions.length % PROGRESS_INTERVAL_COUNT === 0) {
+                            player.say(getProgressMessage(positions.length));
+                        }
                     }
                 }
             }
@@ -847,7 +891,7 @@ namespace coordinates {
         const densityFactor = Math.max(0.1, Math.min(1.0, Math.abs(density)));
 
         // 最適化済み球体アルゴリズム
-        player.say(MESSAGES.GENERATING);
+        player.say(getProgressMessage(0));
         for (let x = centerX - radiusInt; x <= centerX + radiusInt; x++) {
             for (let y = centerY - radiusInt; y <= centerY + radiusInt; y++) {
                 for (let z = centerZ - radiusInt; z <= centerZ + radiusInt; z++) {
@@ -855,6 +899,9 @@ namespace coordinates {
                     
                     if (shouldPlaceBlock(distance, radiusInt, hollow) && passesDensitySampling(densityFactor)) {
                         positions.push(world(x, y, z));
+                        if (positions.length % PROGRESS_INTERVAL_COUNT === 0) {
+                            player.say(getProgressMessage(positions.length));
+                        }
                     }
                 }
             }
@@ -908,6 +955,9 @@ namespace coordinates {
 
                         if (isOnFace) {
                             positions.push(world(x, y, z));
+                            if (positions.length % PROGRESS_INTERVAL_COUNT === 0) {
+                                player.say(getProgressMessage(positions.length));
+                            }
                         }
                     }
                 }
@@ -918,6 +968,9 @@ namespace coordinates {
                 for (let y = minY; y <= maxY; y++) {
                     for (let z = minZ; z <= maxZ; z++) {
                         positions.push(world(x, y, z));
+                        if (positions.length % PROGRESS_INTERVAL_COUNT === 0) {
+                            player.say(getProgressMessage(positions.length));
+                        }
                     }
                 }
             }
