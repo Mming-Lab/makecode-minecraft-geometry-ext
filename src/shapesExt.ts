@@ -7,7 +7,7 @@ namespace shapes {
     // ShapeOperation.Replace, ShapeOperation.Outline, ShapeOperation.Hollow
     
     /**
-     * Place blocks in batches using coordinates.BATCH_SIZE for optimal performance
+     * Place blocks in batches using coordinates.optimizedFill with position splitting
      * @param positions Array of positions to place blocks at
      * @param block Block type to place
      * @param operation Shape operation type (Replace, Outline, Hollow)
@@ -23,12 +23,21 @@ namespace shapes {
             // This is handled in individual shape functions
         }
         
-        for (let i = 0; i < positions.length; i += coordinates.BATCH_SIZE) {
-            const batch = positions.slice(i, i + coordinates.BATCH_SIZE);
-            const progress = Math.round(((i + batch.length) / positions.length) * 100);
-            player.say(`Placing ${progress}%`);
+        // Split positions into smaller batches for optimizedFill
+        const batchSize = 2048; // 2048座標ごとに分割
+        const totalBatches = Math.ceil(positions.length / batchSize);
+        
+        player.say(`${coordinates.MESSAGES.PLACEMENT_START} (${positions.length} blocks, ${totalBatches} batches)`);
+        
+        for (let i = 0; i < positions.length; i += batchSize) {
+            const batch = positions.slice(i, i + batchSize);
+            const batchNumber = Math.floor(i / batchSize) + 1;
+            
+            player.say(`${coordinates.MESSAGES.BATCH_PROCESSING} ${batchNumber}/${totalBatches} (${batch.length} blocks)`);
             coordinates.optimizedFill(batch, block);
         }
+        
+        player.say(coordinates.MESSAGES.PLACEMENT_COMPLETE);
     }
     /**
      * Place blocks along a bezier curve with variable number of control points.
@@ -114,11 +123,11 @@ namespace shapes {
     export function optimizedSphere(block: number, center: Position, radius: number, operation: ShapeOperation = ShapeOperation.Replace): void {
         // Parameter validation
         if (!center) {
-            player.say("Error: Invalid center position");
+            player.say(coordinates.MESSAGES.ERROR_INVALID_CENTER);
             return;
         }
         if (radius <= 0) {
-            player.say("Error: Radius must be positive");
+            player.say(coordinates.MESSAGES.ERROR_INVALID_RADIUS);
             return;
         }
         

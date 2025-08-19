@@ -5,11 +5,6 @@ namespace coordinates {
     // Configuration constants and message definitions
     // ==============================
     
-     /** Message display interval during coordinate generation */
-    const GENERATION_MESSAGE_INTERVAL = 1024;
-
-    /** Batch processing size (memory optimization) */
-    export const BATCH_SIZE = 2048;
     
     /** Valid range for Minecraft coordinates */
     const WORLD_BOUNDS = {
@@ -18,11 +13,14 @@ namespace coordinates {
         Z_MIN: -30000000, Z_MAX: 30000000
     };
     
-    /** Progress status messages (localized) */
-    const MESSAGES = {
+    /** All status messages (English) */
+    export const MESSAGES = {
         GENERATING: "Generating...",
-        PLACEMENT_START: "Starting placement...",
-        COMPLETED: "Placement complete!"
+        ERROR_INVALID_CENTER: "Error: Invalid center position",
+        ERROR_INVALID_RADIUS: "Error: Radius must be positive",
+        PLACEMENT_START: "Placement started",
+        PLACEMENT_COMPLETE: "Placement complete",
+        BATCH_PROCESSING: "Processing batch"
     };
     
     /** Mathematical constants */
@@ -57,17 +55,6 @@ namespace coordinates {
         return null;
     }
     
-    /**
-     * Display progress message at specified intervals
-     * @param currentCount Current processing count
-     * @param messagePrefix Message prefix for display
-     */
-    function showProgressMessage(currentCount: number, messagePrefix: string): void {
-        if (currentCount % GENERATION_MESSAGE_INTERVAL === 0 && currentCount > 0) {
-            const count = Math.floor(currentCount / GENERATION_MESSAGE_INTERVAL) * GENERATION_MESSAGE_INTERVAL;
-            player.say(`${messagePrefix} ${count} blocks`);
-        }
-    }
     
     /**
      * Calculate Euclidean distance in 3D space
@@ -263,9 +250,6 @@ namespace coordinates {
             for (const pos of circlePositions) {
                 positions.push(pos);
                 
-                // バッチ処理：BATCH_SIZEに達したら配置
-                
-                showProgressMessage(positions.length, MESSAGES.GENERATING);
             }
         }
         
@@ -457,7 +441,6 @@ namespace coordinates {
                     
                     if (shouldPlace && validateCoordinates(x, y, z)) {
                         positions.push(world(x, y, z));
-                        showProgressMessage(positions.length, MESSAGES.GENERATING);
                     }
                 }
             }
@@ -872,7 +855,6 @@ namespace coordinates {
                     
                     if (shouldPlaceBlock(distance, radiusInt, hollow) && passesDensitySampling(densityFactor)) {
                         positions.push(world(x, y, z));
-                        showProgressMessage(positions.length, MESSAGES.GENERATING);
                     }
                 }
             }
@@ -968,29 +950,38 @@ namespace coordinates {
     }
     
     /**
-     * ブロック存在チェック用ユーティリティクラス（MakeCode互換）
+     * ブロック存在チェック用ユーティリティクラス（数値ハッシュ化版）
      */
     class BlockExistenceChecker {
-        private blockKeys: string[] = [];
+        private blockNumbers: number[] = [];
         
         constructor(positions: Position[]) {
-            for (const pos of positions) {
-                const key = `${pos.getValue(Axis.X)},${pos.getValue(Axis.Y)},${pos.getValue(Axis.Z)}`;
-                if (this.blockKeys.indexOf(key) === -1) {
-                    this.blockKeys.push(key);
-                }
+            for (let i = 0; i < positions.length; i++) {
+                const pos = positions[i];
+                const encoded = this.encodePosition(
+                    pos.getValue(Axis.X), 
+                    pos.getValue(Axis.Y), 
+                    pos.getValue(Axis.Z)
+                );
+                this.blockNumbers.push(encoded);
+                
             }
         }
         
+        private encodePosition(x: number, y: number, z: number): number {
+            // Minecraft座標範囲内で一意な数値に変換
+            return x * 1000000 + y * 1000 + z;
+        }
+        
         hasBlock(x: number, y: number, z: number): boolean {
-            return this.blockKeys.indexOf(`${x},${y},${z}`) !== -1;
+            return this.blockNumbers.indexOf(this.encodePosition(x, y, z)) !== -1;
         }
         
         removeBlock(x: number, y: number, z: number): void {
-            const key = `${x},${y},${z}`;
-            const index = this.blockKeys.indexOf(key);
+            const encoded = this.encodePosition(x, y, z);
+            const index = this.blockNumbers.indexOf(encoded);
             if (index !== -1) {
-                this.blockKeys.splice(index, 1);
+                this.blockNumbers.splice(index, 1);
             }
         }
     }
@@ -1016,6 +1007,7 @@ namespace coordinates {
         const blockChecker = new BlockExistenceChecker(positions);
         
         // 貪欲アルゴリズムで最大直方体を検出してfill操作で効率的に配置
+        
         for (let x1 = 0; x1 < xs.length; x1++) {
             for (let y1 = 0; y1 < ys.length; y1++) {
                 for (let z1 = 0; z1 < zs.length; z1++) {
@@ -1070,7 +1062,7 @@ namespace coordinates {
                     const toPos = world(xs[maxX], ys[maxY], zs[maxZ]);
                     blocks.fill(block, fromPos, toPos, FillOperation.Replace);
                     
-                    // 使用済みブロックのマーキング
+                    // 使用済みブロックを削除
                     for (let x = x1; x <= maxX; x++) {
                         for (let y = y1; y <= maxY; y++) {
                             for (let z = z1; z <= maxZ; z++) {
