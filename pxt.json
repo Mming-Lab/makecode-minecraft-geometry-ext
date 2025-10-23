@@ -7,11 +7,15 @@
         "builder": "*"
     },
     "files": [
+        "main.blocks",
+        "main.ts",
         "README.md",
         "src/shapesExt.ts",
         "src/coordinates.ts"
     ],
-    "testFiles": [],
+    "testFiles": [
+        "test.ts"
+    ],
     "targetVersions": {
         "target": "2.0.37",
         "targetId": "minecraft"
