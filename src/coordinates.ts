@@ -13,14 +13,14 @@ namespace coordinates {
         Z_MIN: -30000000, Z_MAX: 30000000
     };
 
-    /** すべてのステータスメッセージ（英語） */
+    /** すべてのステータスメッセージ（日本語） */
     export const MESSAGES = {
-        GENERATING: "Generating...",
-        ERROR_INVALID_CENTER: "Error: Invalid center position",
-        ERROR_INVALID_RADIUS: "Error: Radius must be positive",
-        PLACEMENT_START: "Placement started",
-        PLACEMENT_COMPLETE: "Placement complete",
-        BATCH_PROCESSING: "Processing batch"
+        GENERATING: "生成中...",
+        ERROR_INVALID_CENTER: "エラー: 無効な中心位置",
+        ERROR_INVALID_RADIUS: "エラー: 半径は正の値である必要があります",
+        PLACEMENT_START: "配置を開始しました",
+        PLACEMENT_COMPLETE: "配置が完了しました",
+        BATCH_PROCESSING: "バッチ処理中"
     };
 
     /** 数学定数 */
@@ -128,7 +128,7 @@ namespace coordinates {
     //% blockExternalInputs=1
     //% startPoint.shadow=minecraftCreateWorldInternal
     //% endPoint.shadow=minecraftCreateWorldInternal
-    //% group="Curves"
+    //% group="曲線"
     export function getVariableBezierCurvePositions(startPoint: Position, controlPoints: Position[], endPoint: Position): Position[] {
         const allControlPoints: Position[] = [startPoint];
         for (let i = 0; i < controlPoints.length; i++) {
@@ -249,14 +249,14 @@ namespace coordinates {
      */
     //% weight=20
     //% blockId=minecraftGetCylinderPositions
-    //% block="円柱の座標を取得 中心 $center 半径 $radius 高さ $height || 中空 $hollow 層数制限 $layers"
+    //% block="円柱の座標を取得 中心 $center 半径 $radius 高さ $height|| 中空 $hollow 層数制限 $layers"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=1 radius.max=200 radius.defl=5
     //% height.min=1 height.max=300 height.defl=10
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% layers.min=0 layers.max=50 layers.defl=0
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Optimized)"
+    //% group="3D図形（最適化）"
     export function getCylinderPositions(center: Position, radius: number, height: number, hollow: boolean = false, layers: number = 0): Position[] {
         const radiusInt = Math.max(1, Math.round(radius));
         const heightInt = Math.max(1, Math.round(height));
@@ -301,13 +301,13 @@ namespace coordinates {
      */
     //% weight=19
     //% blockId=minecraftGetConePositions
-    //% block="円錐の座標を取得 中心 $center 半径 $radius 高さ $height || 中空 $hollow"
+    //% block="円錐の座標を取得 中心 $center 半径 $radius 高さ $height|| 中空 $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=1 radius.max=200 radius.defl=5
     //% height.min=1 height.max=300 height.defl=10
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Basic)"
+    //% group="3D図形（基本）"
     export function getConePositions(center: Position, radius: number, height: number, hollow: boolean = false): Position[] {
         const centerX = Math.round(center.getValue(Axis.X));
         const centerY = Math.round(center.getValue(Axis.Y));
@@ -362,13 +362,13 @@ namespace coordinates {
      */
     //% weight=18
     //% blockId=minecraftGetTorusPositions
-    //% block="トーラスの座標を取得 中心 $center 主半径 $majorRadius 副半径 $minorRadius || 中空 $hollow"
+    //% block="トーラスの座標を取得 中心 $center 主半径 $majorRadius 副半径 $minorRadius|| 中空 $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% majorRadius.min=3 majorRadius.max=200 majorRadius.defl=8
     //% minorRadius.min=1 minorRadius.max=100 minorRadius.defl=3
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Advanced)"
+    //% group="3D図形（高度）"
     export function getTorusPositions(center: Position, majorRadius: number, minorRadius: number, hollow: boolean = false): Position[] {
         const centerX = Math.round(center.getValue(Axis.X));
         const centerY = Math.round(center.getValue(Axis.Y));
@@ -434,14 +434,14 @@ namespace coordinates {
      */
     //% weight=17
     //% blockId=minecraftGetEllipsoidPositions
-    //% block="楕円体の座標を取得 中心 $center X半径 $radiusX Y半径 $radiusY Z半径 $radiusZ || 中空 $hollow"
+    //% block="楕円体の座標を取得 中心 $center X半径 $radiusX Y半径 $radiusY Z半径 $radiusZ|| 中空 $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% radiusX.min=1 radiusX.max=200 radiusX.defl=5
     //% radiusY.min=1 radiusY.max=200 radiusY.defl=3
     //% radiusZ.min=1 radiusZ.max=200 radiusZ.defl=7
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Optimized)"
+    //% group="3D図形（最適化）"
     export function getEllipsoidPositions(center: Position, radiusX: number, radiusY: number, radiusZ: number, hollow: boolean = false): Position[] {
         const centerX = normalizeCoordinate(center.getValue(Axis.X));
         const centerY = normalizeCoordinate(center.getValue(Axis.Y));
@@ -500,7 +500,7 @@ namespace coordinates {
     //% block="線の座標を取得 開始 $p0 終了 $p1"
     //% p0.shadow=minecraftCreateWorldInternal
     //% p1.shadow=minecraftCreateWorldInternal
-    //% group="2D Shapes"
+    //% group="2D図形"
     export function getLinePositions(p0: Position, p1: Position): Position[] {
         const positions: Position[] = [];
 
@@ -583,14 +583,14 @@ namespace coordinates {
      */
     //% weight=16
     //% blockId=minecraftGetHelixPositions
-    //% block="螺旋の座標を取得 中心 $center 半径 $radius 高さ $height 回転数 $turns || 時計回り $clockwise"
+    //% block="螺旋の座標を取得 中心 $center 半径 $radius 高さ $height 回転数 $turns|| 時計回り $clockwise"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=1 radius.max=200 radius.defl=5
     //% height.min=2 height.max=300 height.defl=20
     //% turns.min=0.5 turns.max=20 turns.defl=3
     //% clockwise.shadow=toggleOnOff clockwise.defl=true
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Advanced)"
+    //% group="3D図形（高度）"
     export function getHelixPositions(center: Position, radius: number, height: number, turns: number, clockwise: boolean = true): Position[] {
         const positionsArr: Position[] = [];
         const centerX = Math.round(center.getValue(Axis.X));
@@ -646,13 +646,13 @@ namespace coordinates {
      */
     //% weight=15
     //% blockId=minecraftGetParaboloidPositions
-    //% block="パラボロイドの座標を取得 中心 $center 半径 $radius 高さ $height || 中空 $hollow"
+    //% block="パラボロイドの座標を取得 中心 $center 半径 $radius 高さ $height|| 中空 $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=2 radius.max=200 radius.defl=8
     //% height.min=1 height.max=300 height.defl=10
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Advanced)"
+    //% group="3D図形（高度）"
     export function getParaboloidPositions(center: Position, radius: number, height: number, hollow: boolean = false): Position[] {
         const positions: Position[] = [];
         const centerX = Math.round(center.getValue(Axis.X));
@@ -717,14 +717,14 @@ namespace coordinates {
      */
     //% weight=14
     //% blockId=minecraftGetHyperboloidPositions
-    //% block="双曲面の座標を取得 中心 $center 底面半径 $baseRadius くびれ半径 $waistRadius 高さ $height || 中空 $hollow"
+    //% block="双曲面の座標を取得 中心 $center 底面半径 $baseRadius くびれ半径 $waistRadius 高さ $height|| 中空 $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% baseRadius.min=3 baseRadius.max=200 baseRadius.defl=10
     //% waistRadius.min=1 waistRadius.max=100 waistRadius.defl=5
     //% height.min=4 height.max=300 height.defl=20
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Advanced)"
+    //% group="3D図形（高度）"
     export function getHyperboloidPositions(center: Position, baseRadius: number, waistRadius: number, height: number, hollow: boolean = false): Position[] {
         const positions: Position[] = [];
         const centerX = Math.round(center.getValue(Axis.X));
@@ -790,12 +790,12 @@ namespace coordinates {
      */
     //% weight=95
     //% blockId=minecraftGetCirclePositions
-    //% block="円の座標を取得 中心 $center 半径 $radius 向き $orientation || 中空 $hollow"
+    //% block="円の座標を取得 中心 $center 半径 $radius 向き $orientation|| 中空 $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=1 radius.max=200 radius.defl=5
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
-    //% group="2D Shapes"
+    //% group="2D図形"
     export function getCirclePositions(center: Position, radius: number, orientation: Axis, hollow: boolean = false): Position[] {
         const positions: Position[] = [];
         const centerX = Math.round(center.getValue(Axis.X));
@@ -876,13 +876,13 @@ namespace coordinates {
      */
     //% weight=90
     //% blockId=minecraftGetSpherePositions
-    //% block="球の座標を取得 中心 $center 半径 $radius || 中空 $hollow 密度 $density"
+    //% block="球の座標を取得 中心 $center 半径 $radius|| 中空 $hollow 密度 $density"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=1 radius.max=200 radius.defl=5
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% density.min=0.1 density.max=1.0 density.defl=1.0
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Optimized)"
+    //% group="3D図形（最適化）"
     export function getSpherePositions(center: Position, radius: number, hollow: boolean = false, density: number = 1.0): Position[] {
         // パラメータ検証
         if (!center) {
@@ -929,12 +929,12 @@ namespace coordinates {
      */
     //% weight=85
     //% blockId=minecraftGetCuboidPositions
-    //% block="直方体の座標を取得 角1 $corner1 角2 $corner2 || 中空 $hollow"
+    //% block="直方体の座標を取得 角1 $corner1 角2 $corner2|| 中空 $hollow"
     //% corner1.shadow=minecraftCreateWorldInternal
     //% corner2.shadow=minecraftCreateWorldInternal
     //% hollow.shadow=toggleOnOff hollow.defl=false
     //% expandableArgumentMode="toggle"
-    //% group="3D Shapes (Basic)"
+    //% group="3D図形（基本）"
     export function getCuboidPositions(corner1: Position, corner2: Position, hollow: boolean = false): Position[] {
         const positions: Position[] = [];
 
@@ -1013,131 +1013,184 @@ namespace coordinates {
     }
     
     /**
-     * ブロック存在チェック用ユーティリティクラス（数値ハッシュ化版）
+     * 座標インデックスマップを作成
      */
-    class BlockExistenceChecker {
-        private blockNumbers: number[] = [];
-        
-        constructor(positions: Position[]) {
-            for (let i = 0; i < positions.length; i++) {
-                const pos = positions[i];
-                const encoded = this.encodePosition(
-                    pos.getValue(Axis.X), 
-                    pos.getValue(Axis.Y), 
-                    pos.getValue(Axis.Z)
-                );
-                this.blockNumbers.push(encoded);
-                
+    function createIndexMap(coords: number[]): { [key: number]: number } {
+        const map: { [key: number]: number } = {};
+        for (let i = 0; i < coords.length; i++) {
+            map[coords[i]] = i;
+        }
+        return map;
+    }
+
+    /**
+     * 3Dグリッドマップを作成
+     */
+    function createGridMap(positions: Position[], xs: number[], ys: number[], zs: number[]): boolean[][][] {
+        const xMap = createIndexMap(xs);
+        const yMap = createIndexMap(ys);
+        const zMap = createIndexMap(zs);
+
+        // 3D boolean配列を初期化
+        const grid: boolean[][][] = [];
+        for (let x = 0; x < xs.length; x++) {
+            grid[x] = [];
+            for (let y = 0; y < ys.length; y++) {
+                grid[x][y] = [];
+                for (let z = 0; z < zs.length; z++) {
+                    grid[x][y][z] = false;
+                }
             }
         }
-        
-        private encodePosition(x: number, y: number, z: number): number {
-            // Minecraft座標範囲内で一意な数値に変換
-            return x * ENCODING_CONSTANTS.X_MULTIPLIER +
-                   y * ENCODING_CONSTANTS.Y_MULTIPLIER +
-                   z * ENCODING_CONSTANTS.Z_MULTIPLIER;
-        }
-        
-        hasBlock(x: number, y: number, z: number): boolean {
-            return this.blockNumbers.indexOf(this.encodePosition(x, y, z)) !== -1;
-        }
-        
-        removeBlock(x: number, y: number, z: number): void {
-            const encoded = this.encodePosition(x, y, z);
-            const index = this.blockNumbers.indexOf(encoded);
-            if (index !== -1) {
-                this.blockNumbers.splice(index, 1);
+
+        // ブロック存在マップを作成
+        for (const pos of positions) {
+            const xi = xMap[pos.getValue(Axis.X)];
+            const yi = yMap[pos.getValue(Axis.Y)];
+            const zi = zMap[pos.getValue(Axis.Z)];
+            if (xi !== undefined && yi !== undefined && zi !== undefined) {
+                grid[xi][yi][zi] = true;
             }
         }
+
+        return grid;
     }
     
     /**
-     * 高速ブロック配置（貪欲アルゴリズム使用）
+     * 高速ブロック配置（改善版貪欲アルゴリズム使用）
      * @param positions 配置する座標配列
      * @param block 配置するブロックタイプ
      */
     //% weight=200
     //% blockId=coordinatesOptimizedFill
     //% block="高速配置 座標配列 $positions ブロック $block=minecraftBlock"
-    //% group="High-speed Building"
+    //% group="高速配置"
     export function optimizedFill(positions: Position[], block: number): void {
         if (positions.length === 0) return;
-        
-        // 座標をソートしてグリッド化
+
+        player.say(`${MESSAGES.PLACEMENT_START} (${positions.length})`);
+
+        // 1. 座標をソートしてグリッド化
         const xs = getUniqueCoordinates(positions, 'x');
         const ys = getUniqueCoordinates(positions, 'y');
         const zs = getUniqueCoordinates(positions, 'z');
-        
-        // ブロック存在チェッカーを初期化
-        const blockChecker = new BlockExistenceChecker(positions);
-        
-        // 貪欲アルゴリズムで最大直方体を検出してfill操作で効率的に配置
-        
+
+        // 2. 3Dグリッドマップを作成（O(1)アクセス）
+        const grid = createGridMap(positions, xs, ys, zs);
+
+        let fillCount = 0;
+        let blocksPlaced = 0;
+
+        // 3. 改善された貪欲アルゴリズム
         for (let x1 = 0; x1 < xs.length; x1++) {
             for (let y1 = 0; y1 < ys.length; y1++) {
                 for (let z1 = 0; z1 < zs.length; z1++) {
-                    if (!blockChecker.hasBlock(xs[x1], ys[y1], zs[z1])) continue;
-                    
-                    let maxX = x1, maxY = y1, maxZ = z1;
-                    
-                    // X方向への直方体拡張
-                    for (let x2 = x1; x2 < xs.length; x2++) {
-                        let canExpand = true;
-                        for (let y = y1; y <= maxY && canExpand; y++) {
-                            for (let z = z1; z <= maxZ && canExpand; z++) {
-                                if (!blockChecker.hasBlock(xs[x2], ys[y], zs[z])) {
-                                    canExpand = false;
-                                }
-                            }
-                        }
-                        if (canExpand) maxX = x2;
-                        else break;
+                    if (!grid[x1][y1][z1]) continue;
+
+                    // 最大直方体を探す（体積優先）
+                    let bestVolume = 0;
+                    let bestX2 = x1, bestY2 = y1, bestZ2 = z1;
+
+                    // X方向に可能な限り拡張
+                    let maxX = x1;
+                    while (maxX + 1 < xs.length && grid[maxX + 1][y1][z1]) {
+                        maxX++;
                     }
-                    
-                    // Y方向への直方体拡張
+
+                    // Y方向に可能な限り拡張（X範囲を維持）
                     for (let y2 = y1; y2 < ys.length; y2++) {
-                        let canExpand = true;
-                        for (let x = x1; x <= maxX && canExpand; x++) {
-                            for (let z = z1; z <= maxZ && canExpand; z++) {
-                                if (!blockChecker.hasBlock(xs[x], ys[y2], zs[z])) {
-                                    canExpand = false;
+                        let yExpandable = true;
+                        for (let x = x1; x <= maxX; x++) {
+                            if (!grid[x][y2][z1]) {
+                                yExpandable = false;
+                                break;
+                            }
+                        }
+                        if (!yExpandable) break;
+
+                        // Z方向に可能な限り拡張（XY範囲を維持）
+                        for (let z2 = z1; z2 < zs.length; z2++) {
+                            let zExpandable = true;
+                            for (let x = x1; x <= maxX && zExpandable; x++) {
+                                for (let y = y1; y <= y2 && zExpandable; y++) {
+                                    if (!grid[x][y][z2]) {
+                                        zExpandable = false;
+                                    }
+                                }
+                            }
+                            if (!zExpandable) break;
+
+                            // 体積計算
+                            const volume = (maxX - x1 + 1) * (y2 - y1 + 1) * (z2 - z1 + 1);
+                            if (volume > bestVolume) {
+                                bestVolume = volume;
+                                bestX2 = maxX;
+                                bestY2 = y2;
+                                bestZ2 = z2;
+                            }
+                        }
+                    }
+
+                    // 最適直方体を配置
+                    if (bestVolume > 0) {
+                        const fromPos = world(xs[x1], ys[y1], zs[z1]);
+                        const toPos = world(xs[bestX2], ys[bestY2], zs[bestZ2]);
+                        blocks.fill(block, fromPos, toPos, FillOperation.Replace);
+
+                        fillCount++;
+                        blocksPlaced += bestVolume;
+
+                        // 使用済みブロックをマーク
+                        for (let x = x1; x <= bestX2; x++) {
+                            for (let y = y1; y <= bestY2; y++) {
+                                for (let z = z1; z <= bestZ2; z++) {
+                                    grid[x][y][z] = false;
                                 }
                             }
                         }
-                        if (canExpand) maxY = y2;
-                        else break;
-                    }
-                    
-                    // Z方向への直方体拡張
-                    for (let z2 = z1; z2 < zs.length; z2++) {
-                        let canExpand = true;
-                        for (let x = x1; x <= maxX && canExpand; x++) {
-                            for (let y = y1; y <= maxY && canExpand; y++) {
-                                if (!blockChecker.hasBlock(xs[x], ys[y], zs[z2])) {
-                                    canExpand = false;
-                                }
-                            }
-                        }
-                        if (canExpand) maxZ = z2;
-                        else break;
-                    }
-                    
-                    // 最適化blocks.fill操作で直方体を一度に配置
-                    const fromPos = world(xs[x1], ys[y1], zs[z1]);
-                    const toPos = world(xs[maxX], ys[maxY], zs[maxZ]);
-                    blocks.fill(block, fromPos, toPos, FillOperation.Replace);
-                    
-                    // 使用済みブロックを削除
-                    for (let x = x1; x <= maxX; x++) {
-                        for (let y = y1; y <= maxY; y++) {
-                            for (let z = z1; z <= maxZ; z++) {
-                                blockChecker.removeBlock(xs[x], ys[y], zs[z]);
-                            }
+
+                        // プログレス報告
+                        if (fillCount % 100 === 0) {
+                            player.say(`${MESSAGES.BATCH_PROCESSING}: ${blocksPlaced}/${positions.length}`);
                         }
                     }
                 }
             }
         }
+
+        player.say(`${MESSAGES.PLACEMENT_COMPLETE}: ${fillCount} fills, ${blocksPlaced} blocks`);
+    }
+
+    /**
+     * バッチ処理による高速配置（シンプル版）
+     * @param positions 配置する座標配列
+     * @param block 配置するブロックタイプ
+     */
+    //% weight=199
+    //% blockId=coordinatesSimpleFill
+    //% block="シンプル配置 座標配列 $positions ブロック $block=minecraftBlock"
+    //% group="高速配置"
+    export function simpleFill(positions: Position[], block: number): void {
+        if (positions.length === 0) return;
+
+        const BATCH_SIZE = 2048; // MakeCodeの推奨バッチサイズ
+        player.say(`${MESSAGES.PLACEMENT_START} (${positions.length})`);
+
+        for (let i = 0; i < positions.length; i += BATCH_SIZE) {
+            const batchEnd = Math.min(i + BATCH_SIZE, positions.length);
+
+            for (let j = i; j < batchEnd; j++) {
+                blocks.place(block, positions[j]);
+            }
+
+            // タイムアウト防止とプログレス報告
+            if (i + BATCH_SIZE < positions.length) {
+                player.say(`${MESSAGES.BATCH_PROCESSING}: ${batchEnd}/${positions.length}`);
+                loops.pause(20); // 20ms待機でタイムアウト防止
+            }
+        }
+
+        player.say(`${MESSAGES.PLACEMENT_COMPLETE}: ${positions.length} blocks`);
     }
 
 }

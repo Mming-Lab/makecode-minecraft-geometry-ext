@@ -1,5 +1,5 @@
 {
-    "name": "makecode-minecraft-mming-shapes",
+    "name": "makecode-minecraft-geometry-ext",
     "version": "0.0.10",
     "description": "Advanced 3D shape generation extension for Minecraft Education Edition",
     "dependencies": {

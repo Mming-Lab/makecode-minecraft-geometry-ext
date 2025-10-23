@@ -72,7 +72,7 @@ namespace shapes {
     //% block="可変ベジェ %block=minecraftBlock|開始 %startPoint=minecraftCreatePosition|終了 %endPoint=minecraftCreatePosition|制御点 %controlPoints"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
-    //% group="Lines and Curves"
+    //% group="線と曲線"
     export function variableBezier(block: number, startPoint: Position, endPoint: Position, controlPoints: Position[]): void {
         const positions = coordinates.getVariableBezierCurvePositions(startPoint, controlPoints, endPoint);
         batchPlaceBlocks(positions, block);
@@ -89,7 +89,7 @@ namespace shapes {
     //% block="高速線引き %block=minecraftBlock|開始 %p0=minecraftCreatePosition|終了 %p1=minecraftCreatePosition"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
-    //% group="Basic Shapes"
+    //% group="基本図形"
     export function optimizedLine(block: number, p0: Position, p1: Position): void {
         const positions = coordinates.getLinePositions(p0, p1);
         batchPlaceBlocks(positions, block);
@@ -109,7 +109,7 @@ namespace shapes {
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
-    //% group="Basic Shapes"
+    //% group="基本図形"
     export function optimizedCircle(block: number, center: Position, radius: number, orientation: Axis, operation: ShapeOperation = ShapeOperation.Replace): void {
         handleShapeOperation(block, operation, (hollow) =>
             coordinates.getCirclePositions(center, radius, orientation, hollow)
@@ -130,7 +130,7 @@ namespace shapes {
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
-    //% group="3D Shapes Optimized"
+    //% group="3D図形（最適化）"
     export function optimizedSphere(block: number, center: Position, radius: number, operation: ShapeOperation = ShapeOperation.Replace): void {
         // パラメータ検証
         if (!center) {
@@ -160,7 +160,7 @@ namespace shapes {
     //% block="直方体 %block=minecraftBlock|角1 %corner1=minecraftCreatePosition|角2 %corner2=minecraftCreatePosition|%operation"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
-    //% group="3D Shapes Basic"
+    //% group="3D図形（基本）"
     export function cuboid(block: number, corner1: Position, corner2: Position, operation: ShapeOperation = ShapeOperation.Replace): void {
         handleShapeOperation(block, operation, (hollow) =>
             coordinates.getCuboidPositions(corner1, corner2, hollow)
@@ -182,7 +182,7 @@ namespace shapes {
     //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
     //% height.min=1 height.max=300 height.defl=10
-    //% group="3D Shapes Optimized"
+    //% group="3D図形（最適化）"
     export function cylinder(block: number, center: Position, radius: number, height: number, operation: ShapeOperation = ShapeOperation.Replace): void {
         handleShapeOperation(block, operation, (hollow) =>
             coordinates.getCylinderPositions(center, radius, height, hollow)
@@ -204,7 +204,7 @@ namespace shapes {
     //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
     //% height.min=1 height.max=300 height.defl=10
-    //% group="3D Shapes Basic"
+    //% group="3D図形（基本）"
     export function cone(block: number, center: Position, radius: number, height: number, operation: ShapeOperation = ShapeOperation.Replace): void {
         handleShapeOperation(block, operation, (hollow) =>
             coordinates.getConePositions(center, radius, height, hollow)
@@ -226,7 +226,7 @@ namespace shapes {
     //% blockExternalInputs=1
     //% majorRadius.min=3 majorRadius.max=200 majorRadius.defl=8
     //% minorRadius.min=1 minorRadius.max=100 minorRadius.defl=3
-    //% group="Complex Shapes"
+    //% group="複雑な図形"
     export function torus(block: number, center: Position, majorRadius: number, minorRadius: number, operation: ShapeOperation = ShapeOperation.Replace): void {
         handleShapeOperation(block, operation, (hollow) =>
             coordinates.getTorusPositions(center, majorRadius, minorRadius, hollow)
@@ -251,7 +251,7 @@ namespace shapes {
     //% radiusX.min=1 radiusX.max=200 radiusX.defl=5
     //% radiusY.min=1 radiusY.max=200 radiusY.defl=3
     //% radiusZ.min=1 radiusZ.max=200 radiusZ.defl=7
-    //% group="3D Shapes Optimized"
+    //% group="3D図形（最適化）"
     export function ellipsoid(block: number, center: Position, radiusX: number, radiusY: number, radiusZ: number, operation: ShapeOperation = ShapeOperation.Replace): void {
         handleShapeOperation(block, operation, (hollow) =>
             coordinates.getEllipsoidPositions(center, radiusX, radiusY, radiusZ, hollow)
@@ -277,7 +277,7 @@ namespace shapes {
     //% turns.min=0.5 turns.max=20 turns.defl=3
     //% clockwise.shadow=toggleOnOff clockwise.defl=true
     //% expandableArgumentMode="toggle"
-    //% group="Complex Shapes"
+    //% group="複雑な図形"
     export function helix(block: number, center: Position, radius: number, height: number, turns: number, clockwise: boolean = true): void {
         const positions = coordinates.getHelixPositions(center, radius, height, turns, clockwise);
         batchPlaceBlocks(positions, block);
@@ -298,7 +298,7 @@ namespace shapes {
     //% blockExternalInputs=1
     //% radius.min=2 radius.max=200 radius.defl=8
     //% height.min=1 height.max=300 height.defl=10
-    //% group="Complex Shapes"
+    //% group="複雑な図形"
     export function paraboloid(block: number, center: Position, radius: number, height: number, operation: ShapeOperation = ShapeOperation.Replace): void {
         handleShapeOperation(block, operation, (hollow) =>
             coordinates.getParaboloidPositions(center, radius, height, hollow)
@@ -322,7 +322,7 @@ namespace shapes {
     //% baseRadius.min=3 baseRadius.max=200 baseRadius.defl=10
     //% waistRadius.min=1 waistRadius.max=100 waistRadius.defl=5
     //% height.min=4 height.max=300 height.defl=20
-    //% group="Complex Shapes"
+    //% group="複雑な図形"
     export function hyperboloid(block: number, center: Position, baseRadius: number, waistRadius: number, height: number, operation: ShapeOperation = ShapeOperation.Replace): void {
         handleShapeOperation(block, operation, (hollow) =>
             coordinates.getHyperboloidPositions(center, baseRadius, waistRadius, height, hollow)

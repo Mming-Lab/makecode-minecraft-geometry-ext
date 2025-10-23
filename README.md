@@ -28,7 +28,7 @@ Minecraft Education Editionで高度な3D図形生成を可能にするMakeCode�
 ### 拡張機能として追加
 1. [minecraft.makecode.com](https://minecraft.makecode.com/) を開く
 2. **新しいプロジェクト** → **拡張機能**
-3. `https://github.com/mming-lab/makecode-minecraft-mming-shapes` を検索
+3. `https://github.com/mming-lab/makecode-minecraft-geometry-ext` を検索
 
 ### 基本的な使用例
 
