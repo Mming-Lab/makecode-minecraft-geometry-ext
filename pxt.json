@@ -1,6 +1,6 @@
 {
     "name": "makecode-minecraft-geometry-ext",
-    "version": "0.0.10",
+    "version": "0.0.11",
     "description": "Advanced 3D shape generation extension for Minecraft Education Edition",
     "dependencies": {
         "core": "*",
