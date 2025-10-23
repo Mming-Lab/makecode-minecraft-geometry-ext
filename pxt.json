@@ -1,23 +1,15 @@
 {
-    "name": "makecode-minecraft-mming-Ext",
+    "name": "makecode-minecraft-mming-shapes",
     "version": "0.0.10",
-    "description": "",
+    "description": "Advanced 3D shape generation extension for Minecraft Education Edition",
     "dependencies": {
         "core": "*",
         "builder": "*"
     },
     "files": [
-        "main.blocks",
-        "main.ts",
         "README.md",
-        "src/camera.ts",
-        "src/Easing.jres",
-        "src/RotatingPosition.ts",
-        "src/numericBlock.ts",
         "src/shapesExt.ts",
-        "src/coordinates.ts",
-        "_locales/ja/makecode-minecraft-mming-Ext-strings.json",
-        "_locales/ja/makecode-minecraft-mming-Ext-jsdoc-strings.json"
+        "src/coordinates.ts"
     ],
     "testFiles": [],
     "targetVersions": {

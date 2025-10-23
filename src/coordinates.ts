@@ -1,19 +1,19 @@
-// Coordinate calculation namespace (returns position arrays without placing blocks)
+// 座標計算名前空間（ブロック配置せずに座標配列を返す）
 //% block="座標" weight=2 color=#4CAF50 icon="\uf43c" advanced=true
 namespace coordinates {
     // ==============================
-    // Configuration constants and message definitions
+    // 設定定数とメッセージ定義
     // ==============================
-    
-    
-    /** Valid range for Minecraft coordinates */
+
+
+    /** Minecraft座標の有効範囲 */
     const WORLD_BOUNDS = {
         X_MIN: -30000000, X_MAX: 30000000,
         Y_MIN: -64, Y_MAX: 320,
         Z_MIN: -30000000, Z_MAX: 30000000
     };
-    
-    /** All status messages (English) */
+
+    /** すべてのステータスメッセージ（英語） */
     export const MESSAGES = {
         GENERATING: "Generating...",
         ERROR_INVALID_CENTER: "Error: Invalid center position",
@@ -22,18 +22,28 @@ namespace coordinates {
         PLACEMENT_COMPLETE: "Placement complete",
         BATCH_PROCESSING: "Processing batch"
     };
-    
-    /** Mathematical constants */
+
+    /** 数学定数 */
     const MATH_CONSTANTS = {
         PI: 3.14159,
         TWO_PI: 2 * 3.14159
     };
 
-    /** Progress reporting constants */
+    /** プログレス報告定数 */
     const PROGRESS_INTERVAL_COUNT = 1000;
 
+    /** BlockExistenceChecker用の位置エンコーディング定数 */
+    const ENCODING_CONSTANTS = {
+        X_MULTIPLIER: 1000000,
+        Y_MULTIPLIER: 1000,
+        Z_MULTIPLIER: 1
+    };
+
+    /** 中空形状検出の閾値 */
+    const HOLLOW_THRESHOLD = 0.8;
+
     // ==============================
-    // Coordinate utility functions
+    // 座標ユーティリティ関数
     // ==============================
     
     function normalizeCoordinate(coord: number): number {
@@ -60,14 +70,14 @@ namespace coordinates {
     
     
     /**
-     * Calculate Euclidean distance in 3D space
-     * @param x1 Point 1 X coordinate
-     * @param y1 Point 1 Y coordinate
-     * @param z1 Point 1 Z coordinate
-     * @param x2 Point 2 X coordinate
-     * @param y2 Point 2 Y coordinate
-     * @param z2 Point 2 Z coordinate
-     * @returns Euclidean distance between the two points
+     * 3D空間のユークリッド距離を計算
+     * @param x1 点1のX座標
+     * @param y1 点1のY座標
+     * @param z1 点1のZ座標
+     * @param x2 点2のX座標
+     * @param y2 点2のY座標
+     * @param z2 点2のZ座標
+     * @returns 2点間のユークリッド距離
      */
     function calculateDistance(x1: number, y1: number, z1: number, x2: number, y2: number, z2: number): number {
         const dx = x2 - x1;
@@ -77,11 +87,11 @@ namespace coordinates {
     }
     
     /**
-     * Common logic for block placement determination (spherical/hollow detection)
-     * @param distance Distance from center
-     * @param radius Radius value
-     * @param hollow Hollow flag
-     * @returns Whether block should be placed
+     * ブロック配置判定の共通ロジック（球形/中空検出）
+     * @param distance 中心からの距離
+     * @param radius 半径の値
+     * @param hollow 中空フラグ
+     * @returns ブロックを配置すべきかどうか
      */
     function shouldPlaceBlock(distance: number, radius: number, hollow: boolean): boolean {
         if (hollow) {
@@ -92,9 +102,9 @@ namespace coordinates {
     }
     
     /**
-     * Density sampling determination
-     * @param densityFactor Density coefficient (0.1-1.0)
-     * @returns Whether block should be placed based on density sampling
+     * 密度サンプリング判定
+     * @param densityFactor 密度係数（0.1-1.0）
+     * @returns 密度サンプリングに基づいてブロックを配置すべきかどうか
      */
     function passesDensitySampling(densityFactor: number): boolean {
         if (densityFactor <= 0) return false;
@@ -102,19 +112,19 @@ namespace coordinates {
     }
 
     /**
-     * Get progress message with count
-     * @param count Current number of positions generated
-     * @returns Progress message string with count
+     * カウント付きプログレスメッセージを取得
+     * @param count 現在生成された座標の数
+     * @returns カウント付きプログレスメッセージ文字列
      */
     function getProgressMessage(count: number): string {
         return `${MESSAGES.GENERATING} (${count})`;
     }
     /**
-     * Calculate positions for a variable bezier curve with multiple control points
+     * 可変制御点を持つベジェ曲線の座標を計算
      */
     //% weight=8
     //% blockId=minecraftGetVariableBezierCurvePositions
-    //% block="get variable bezier curve positions from $startPoint to $endPoint with control points $controlPoints"
+    //% block="可変ベジェ曲線の座標を取得 開始 $startPoint 終了 $endPoint 制御点配列 $controlPoints"
     //% blockExternalInputs=1
     //% startPoint.shadow=minecraftCreateWorldInternal
     //% endPoint.shadow=minecraftCreateWorldInternal
@@ -180,7 +190,7 @@ namespace coordinates {
     }
 
     /**
-     * Optimized circle position calculation
+     * 最適化された円の座標計算
      */
     function getCirclePositionsOptimized(center: Position, radius: number, axis: Axis, offset: number = 0, hollow: boolean = false): Position[] {
         const positions: Position[] = [];
@@ -192,7 +202,7 @@ namespace coordinates {
         const innerRadius = hollow ? Math.max(0, radiusInt - 1) : 0;
         const innerRadiusSquared = innerRadius * innerRadius;
 
-        // Efficient circle generation algorithm
+        // 効率的な円生成アルゴリズム
         for (let dx = -radiusInt; dx <= radiusInt; dx++) {
             const dxSquared = dx * dx;
             if (dxSquared > radiusSquared) continue;
@@ -239,7 +249,7 @@ namespace coordinates {
      */
     //% weight=20
     //% blockId=minecraftGetCylinderPositions
-    //% block="get optimized cylinder positions at center $center radius $radius height $height || hollow $hollow layers $layers"
+    //% block="円柱の座標を取得 中心 $center 半径 $radius 高さ $height || 中空 $hollow 層数制限 $layers"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=1 radius.max=200 radius.defl=5
     //% height.min=1 height.max=300 height.defl=10
@@ -253,7 +263,7 @@ namespace coordinates {
         const layersInt = layers > 0 ? Math.min(layers, heightInt) : heightInt;
         const positions: Position[] = [];
 
-        // Optimized layer division algorithm
+        // 最適化されたレイヤー分割アルゴリズム
         player.say(getProgressMessage(0));
         for (let i = 0; i < layersInt; i++) {
             const layerCenter = world(
@@ -261,10 +271,10 @@ namespace coordinates {
                 center.getValue(Axis.Y) + i,
                 center.getValue(Axis.Z)
             );
-            
-            // Generate optimized circle for each layer
+
+            // 各レイヤーで最適化された円を生成
             const circlePositions = getCirclePositionsOptimized(layerCenter, radiusInt, Axis.Y, 0, hollow);
-            // MakeCode compatible array spread alternative
+            // MakeCode互換の配列スプレッド代替
             for (const pos of circlePositions) {
                 positions.push(pos);
                 if (positions.length % PROGRESS_INTERVAL_COUNT === 0) {
@@ -291,7 +301,7 @@ namespace coordinates {
      */
     //% weight=19
     //% blockId=minecraftGetConePositions
-    //% block="get cone positions at center $center radius $radius height $height || hollow $hollow"
+    //% block="円錐の座標を取得 中心 $center 半径 $radius 高さ $height || 中空 $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=1 radius.max=200 radius.defl=5
     //% height.min=1 height.max=300 height.defl=10
@@ -343,16 +353,16 @@ namespace coordinates {
     }
 
     /**
-     * Calculate positions for a torus (donut shape)
-     * @param center Center position of the torus
-     * @param majorRadius Major radius (distance from center to tube center)
-     * @param minorRadius Minor radius (tube thickness)
-     * @param hollow Whether to create a hollow torus (default: false)
-     * @returns Array of positions forming the torus
+     * トーラス（ドーナツ形）座標の計算
+     * @param center トーラスの中心点
+     * @param majorRadius 主半径（中心からチューブ中心までの距離）
+     * @param minorRadius 副半径（チューブの太さ）
+     * @param hollow 中空トーラスを作成するか (デフォルト: false)
+     * @returns トーラスを構成する座標配列
      */
     //% weight=18
     //% blockId=minecraftGetTorusPositions
-    //% block="get torus positions at center $center major radius $majorRadius minor radius $minorRadius || hollow $hollow"
+    //% block="トーラスの座標を取得 中心 $center 主半径 $majorRadius 副半径 $minorRadius || 中空 $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% majorRadius.min=3 majorRadius.max=200 majorRadius.defl=8
     //% minorRadius.min=1 minorRadius.max=100 minorRadius.defl=3
@@ -414,17 +424,17 @@ namespace coordinates {
     }
 
     /**
-     * Calculate positions for an ellipsoid using optimized building algorithm
-     * @param center Center position of the ellipsoid
-     * @param radiusX Radius along X axis (1-50 blocks)
-     * @param radiusY Radius along Y axis (1-50 blocks)
-     * @param radiusZ Radius along Z axis (1-50 blocks)
-     * @param hollow Whether to create a hollow ellipsoid (default: false)
-     * @returns Array of positions forming the ellipsoid with enhanced performance
+     * 楕円体座標の計算（最適化アルゴリズム使用）
+     * @param center 楕円体の中心点
+     * @param radiusX X軸方向の半径 (1-50ブロック)
+     * @param radiusY Y軸方向の半径 (1-50ブロック)
+     * @param radiusZ Z軸方向の半径 (1-50ブロック)
+     * @param hollow 中空楕円体を作成するか (デフォルト: false)
+     * @returns 高性能で楕円体を構成する座標配列
      */
     //% weight=17
     //% blockId=minecraftGetEllipsoidPositions
-    //% block="get optimized ellipsoid positions at center $center X radius $radiusX Y radius $radiusY Z radius $radiusZ || hollow $hollow"
+    //% block="楕円体の座標を取得 中心 $center X半径 $radiusX Y半径 $radiusY Z半径 $radiusZ || 中空 $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% radiusX.min=1 radiusX.max=200 radiusX.defl=5
     //% radiusY.min=1 radiusY.max=200 radiusY.defl=3
@@ -442,24 +452,24 @@ namespace coordinates {
         const radiusZInt = Math.max(1, Math.round(radiusZ));
         const positions: Position[] = [];
 
-        // MCP Server式正規化距離計算（シンプルで高効率）
+        // 正規化距離計算（シンプルで高効率）
         const maxRadius = Math.max(Math.max(radiusXInt, radiusYInt), radiusZInt);
         player.say(getProgressMessage(0));
         
         for (let x = centerX - maxRadius; x <= centerX + maxRadius; x++) {
             for (let y = centerY - maxRadius; y <= centerY + maxRadius; y++) {
                 for (let z = centerZ - maxRadius; z <= centerZ + maxRadius; z++) {
-                    // Normalized distance calculation (MCP Server method)
+                    // 正規化距離計算
                     const dx = (x - centerX) / radiusXInt;
                     const dy = (y - centerY) / radiusYInt;
                     const dz = (z - centerZ) / radiusZInt;
                     const normalizedDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                    
+
                     let shouldPlace = false;
-                    
+
                     if (hollow) {
-                        // 中空判定：表面のみ（MCPサーバー方式）
-                        shouldPlace = normalizedDistance <= 1 && normalizedDistance >= 0.8;
+                        // 中空判定：表面のみ
+                        shouldPlace = normalizedDistance <= 1 && normalizedDistance >= HOLLOW_THRESHOLD;
                     } else {
                         // 実体判定：内部含む
                         shouldPlace = normalizedDistance <= 1;
@@ -487,14 +497,14 @@ namespace coordinates {
      */
     //% weight=100
     //% blockId=minecraftGetLinePositions
-    //% block="get line positions from $p0 to $p1"
+    //% block="線の座標を取得 開始 $p0 終了 $p1"
     //% p0.shadow=minecraftCreateWorldInternal
     //% p1.shadow=minecraftCreateWorldInternal
     //% group="2D Shapes"
     export function getLinePositions(p0: Position, p1: Position): Position[] {
         const positions: Position[] = [];
 
-        // 3D Bresenham algorithm (MakeCode core compatible)
+        // 3D Bresenhamアルゴリズム（MakeCodeコア互換）
         let x0 = Math.round(p0.getValue(Axis.X));
         let x1 = Math.round(p1.getValue(Axis.X));
         let y0 = Math.round(p0.getValue(Axis.Y));
@@ -504,7 +514,7 @@ namespace coordinates {
 
         // 少なくとも2つの座標が同じ場合、直線に塗りつぶしを使用する
         if ((x0 == x1 ? 1 : 0) + (y0 == y1 ? 1 : 0) + (z0 == z1 ? 1 : 0) >= 2) {
-            // 1D volume - 直線的な塗りつぶし
+            // 1Dボリューム - 直線的な塗りつぶし
             const minX = Math.min(x0, x1);
             const maxX = Math.max(x0, x1);
             const minY = Math.min(y0, y1);
@@ -522,7 +532,7 @@ namespace coordinates {
             return positions;
         }
 
-        // 3D Bresenham algorithm
+        // 3D Bresenhamアルゴリズム
         const dx = Math.abs(x1 - x0);
         const sx = x0 < x1 ? 1 : -1;
         const dy = Math.abs(y1 - y0);
@@ -563,17 +573,17 @@ namespace coordinates {
     }
 
     /**
-     * Calculate positions for a helix (spiral)
-     * @param center Center position of the helix base
-     * @param radius Radius of the helix
-     * @param height Total height of the helix
-     * @param turns Number of complete turns (rotations)
-     * @param clockwise Whether to rotate clockwise (default: true)
-     * @returns Array of positions forming the helix
+     * ヘリックス（螺旋）座標の計算
+     * @param center ヘリックスの底面中心点
+     * @param radius ヘリックスの半径
+     * @param height ヘリックスの合計高さ
+     * @param turns 完全回転数（ターン数）
+     * @param clockwise 時計回りに回転するか (デフォルト: true)
+     * @returns ヘリックスを構成する座標配列
      */
     //% weight=16
     //% blockId=minecraftGetHelixPositions
-    //% block="get helix positions at center $center radius $radius height $height turns $turns || clockwise $clockwise"
+    //% block="螺旋の座標を取得 中心 $center 半径 $radius 高さ $height 回転数 $turns || 時計回り $clockwise"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=1 radius.max=200 radius.defl=5
     //% height.min=2 height.max=300 height.defl=20
@@ -591,7 +601,7 @@ namespace coordinates {
         const heightInt = Math.round(height);
         const direction = clockwise ? 1 : -1;
 
-        // MCP Server arc length-based density calculation (continuity priority)
+        // 弧長ベース密度計算（連続性優先）
         const circumference = MATH_CONSTANTS.TWO_PI * radiusInt;
         const totalArcLength = circumference * turns;
         const helixLength = Math.sqrt(totalArcLength * totalArcLength + heightInt * heightInt);
@@ -605,7 +615,7 @@ namespace coordinates {
             const angle = (turns * MATH_CONSTANTS.TWO_PI) * progress * direction;
             const currentHeight = heightInt * progress;
 
-            // 螺旋の3D座標計算（MCPサーバー方式）
+            // 螺旋の3D座標計算
             const x = centerX + Math.round(radiusInt * Math.cos(angle));
             const y = centerY + Math.round(currentHeight);
             const z = centerZ + Math.round(radiusInt * Math.sin(angle));
@@ -627,16 +637,16 @@ namespace coordinates {
     }
 
     /**
-     * Calculate positions for a paraboloid (satellite dish shape)
-     * @param center Center position of the paraboloid base
-     * @param radius Maximum radius at the top
-     * @param height Height of the paraboloid
-     * @param hollow Whether to create a hollow paraboloid (default: false)
-     * @returns Array of positions forming the paraboloid
+     * パラボロイド（衛星アンテナ形）座標の計算
+     * @param center パラボロイドの底面中心点
+     * @param radius 上部の最大半径
+     * @param height パラボロイドの高さ
+     * @param hollow 中空パラボロイドを作成するか (デフォルト: false)
+     * @returns パラボロイドを構成する座標配列
      */
     //% weight=15
     //% blockId=minecraftGetParaboloidPositions
-    //% block="get paraboloid positions at center $center radius $radius height $height || hollow $hollow"
+    //% block="パラボロイドの座標を取得 中心 $center 半径 $radius 高さ $height || 中空 $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=2 radius.max=200 radius.defl=8
     //% height.min=1 height.max=300 height.defl=10
@@ -697,17 +707,17 @@ namespace coordinates {
     }
 
     /**
-     * Calculate positions for a hyperboloid (cooling tower shape)
-     * @param center Center position of the hyperboloid
-     * @param baseRadius Radius at the base
-     * @param waistRadius Radius at the narrowest point (waist)
-     * @param height Total height of the hyperboloid
-     * @param hollow Whether to create a hollow hyperboloid (default: false)
-     * @returns Array of positions forming the hyperboloid
+     * 双曲面（冷却塔形）座標の計算
+     * @param center 双曲面の中心点
+     * @param baseRadius 底面の半径
+     * @param waistRadius 最も狭い部分（くびれ）の半径
+     * @param height 双曲面の合計高さ
+     * @param hollow 中空双曲面を作成するか (デフォルト: false)
+     * @returns 双曲面を構成する座標配列
      */
     //% weight=14
     //% blockId=minecraftGetHyperboloidPositions
-    //% block="get hyperboloid positions at center $center base radius $baseRadius waist radius $waistRadius height $height || hollow $hollow"
+    //% block="双曲面の座標を取得 中心 $center 底面半径 $baseRadius くびれ半径 $waistRadius 高さ $height || 中空 $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% baseRadius.min=3 baseRadius.max=200 baseRadius.defl=10
     //% waistRadius.min=1 waistRadius.max=100 waistRadius.defl=5
@@ -771,16 +781,16 @@ namespace coordinates {
     }
 
     /**
-     * Calculate positions for a circle (public function)
-     * @param center Center position of the circle
-     * @param radius Radius of the circle
-     * @param orientation Circle orientation (X, Y, or Z axis)
-     * @param hollow Whether to create a hollow circle (outline only)
-     * @returns Array of positions forming the circle
+     * 円の座標計算（公開関数）
+     * @param center 円の中心点
+     * @param radius 円の半径
+     * @param orientation 円の向き（X、Y、またはZ軸）
+     * @param hollow 中空の円を作成するか（輪郭のみ）
+     * @returns 円を構成する座標配列
      */
     //% weight=95
     //% blockId=minecraftGetCirclePositions
-    //% block="get circle positions at center $center radius $radius orientation $orientation || hollow $hollow"
+    //% block="円の座標を取得 中心 $center 半径 $radius 向き $orientation || 中空 $hollow"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=1 radius.max=200 radius.defl=5
     //% hollow.shadow=toggleOnOff hollow.defl=false
@@ -808,7 +818,7 @@ namespace coordinates {
         }
 
         if (hollow) {
-            // Midpoint circle algorithm (MakeCode core compatible)
+            // 中点円アルゴリズム（MakeCodeコア互換）
             let x = radiusInt;
             let y = 0;
             let err = 0;
@@ -857,16 +867,16 @@ namespace coordinates {
     }
 
     /**
-     * Calculate sphere positions using optimized algorithm
-     * @param center Center position of the sphere
-     * @param radius Sphere radius (1-200 blocks)
-     * @param hollow Whether to create a hollow sphere (surface only)
-     * @param density Density sampling factor (0.1-1.0, default: 1.0)
-     * @returns High-performance array of positions forming the sphere
+     * 球体座標の計算（最適化アルゴリズム使用）
+     * @param center 球体の中心点
+     * @param radius 球体の半径 (1-200ブロック)
+     * @param hollow 中空球体を作成するか（表面のみ）
+     * @param density 密度サンプリング係数 (0.1-1.0、デフォルト: 1.0)
+     * @returns 高性能で球体を構成する座標配列
      */
     //% weight=90
     //% blockId=minecraftGetSpherePositions
-    //% block="get optimized sphere positions at center $center radius $radius || hollow $hollow density $density"
+    //% block="球の座標を取得 中心 $center 半径 $radius || 中空 $hollow 密度 $density"
     //% center.shadow=minecraftCreateWorldInternal
     //% radius.min=1 radius.max=200 radius.defl=5
     //% hollow.shadow=toggleOnOff hollow.defl=false
@@ -874,7 +884,7 @@ namespace coordinates {
     //% expandableArgumentMode="toggle"
     //% group="3D Shapes (Optimized)"
     export function getSpherePositions(center: Position, radius: number, hollow: boolean = false, density: number = 1.0): Position[] {
-        // Parameter validation
+        // パラメータ検証
         if (!center) {
             return [];
         }
@@ -911,15 +921,15 @@ namespace coordinates {
     }
 
     /**
-     * Calculate positions for a cuboid (rectangular prism)
-     * @param corner1 First corner position of the cuboid
-     * @param corner2 Opposite corner position of the cuboid
-     * @param hollow Whether to create a hollow cuboid (shell only)
-     * @returns Array of positions forming the cuboid
+     * 直方体（矩形プリズム）座標の計算
+     * @param corner1 直方体の最初の角の座標
+     * @param corner2 反対側の角の座標
+     * @param hollow 中空直方体を作成するか（殻のみ）
+     * @returns 直方体を構成する座標配列
      */
     //% weight=85
     //% blockId=minecraftGetCuboidPositions
-    //% block="get cuboid positions from corner $corner1 to corner $corner2 || hollow $hollow"
+    //% block="直方体の座標を取得 角1 $corner1 角2 $corner2 || 中空 $hollow"
     //% corner1.shadow=minecraftCreateWorldInternal
     //% corner2.shadow=minecraftCreateWorldInternal
     //% hollow.shadow=toggleOnOff hollow.defl=false
@@ -1023,7 +1033,9 @@ namespace coordinates {
         
         private encodePosition(x: number, y: number, z: number): number {
             // Minecraft座標範囲内で一意な数値に変換
-            return x * 1000000 + y * 1000 + z;
+            return x * ENCODING_CONSTANTS.X_MULTIPLIER +
+                   y * ENCODING_CONSTANTS.Y_MULTIPLIER +
+                   z * ENCODING_CONSTANTS.Z_MULTIPLIER;
         }
         
         hasBlock(x: number, y: number, z: number): boolean {
@@ -1046,7 +1058,7 @@ namespace coordinates {
      */
     //% weight=200
     //% blockId=coordinatesOptimizedFill
-    //% block="high-speed fill positions $positions with $block=minecraftBlock"
+    //% block="高速配置 座標配列 $positions ブロック $block=minecraftBlock"
     //% group="High-speed Building"
     export function optimizedFill(positions: Position[], block: number): void {
         if (positions.length === 0) return;

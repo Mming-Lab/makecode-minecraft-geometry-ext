@@ -1,55 +1,75 @@
-// Shape and form generation extension (using optimized algorithms)
-// Supports from simple 3D shapes to complex Bezier curves
+// 図形・フォーム生成拡張機能（最適化アルゴリズム使用）
+// シンプルな3D図形から複雑なベジェ曲線までサポート
 
 namespace shapes {
-    
-    // Using standard MakeCode ShapeOperation enum
+
+    // 標準MakeCode ShapeOperation列挙型を使用
     // ShapeOperation.Replace, ShapeOperation.Outline, ShapeOperation.Hollow
-    
+
+    /** 大きな座標配列を分割するためのバッチサイズ */
+    const BATCH_SIZE = 2048;
+
     /**
-     * Place blocks in batches using coordinates.optimizedFill with position splitting
-     * @param positions Array of positions to place blocks at
-     * @param block Block type to place
-     * @param operation Shape operation type (Replace, Outline, Hollow)
+     * 座標分割を使用してcoordinates.optimizedFillでブロックをバッチ配置
+     * @param positions ブロックを配置する座標配列
+     * @param block 配置するブロックタイプ
      */
-    function batchPlaceBlocks(positions: Position[], block: number, operation: ShapeOperation = ShapeOperation.Replace): void {
+    function batchPlaceBlocks(positions: Position[], block: number): void {
         if (!positions || positions.length === 0) {
             return;
         }
-        
-        // Handle hollow operation by first placing air, then outline
-        if (operation === ShapeOperation.Hollow) {
-            // For hollow, we need to implement it at shape level, not here
-            // This is handled in individual shape functions
-        }
-        
-        // Split positions into smaller batches for optimizedFill
-        const batchSize = 2048; // 2048座標ごとに分割
-        const totalBatches = Math.ceil(positions.length / batchSize);
-        
+
+        // optimizedFill用に座標を小さなバッチに分割
+        const totalBatches = Math.ceil(positions.length / BATCH_SIZE);
+
         player.say(`${coordinates.MESSAGES.PLACEMENT_START} (${positions.length} blocks, ${totalBatches} batches)`);
-        
-        for (let i = 0; i < positions.length; i += batchSize) {
-            const batch = positions.slice(i, i + batchSize);
-            const batchNumber = Math.floor(i / batchSize) + 1;
-            
+
+        for (let i = 0; i < positions.length; i += BATCH_SIZE) {
+            const batch = positions.slice(i, i + BATCH_SIZE);
+            const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+
             player.say(`${coordinates.MESSAGES.BATCH_PROCESSING} ${batchNumber}/${totalBatches} (${batch.length} blocks)`);
             coordinates.optimizedFill(batch, block);
         }
-        
+
         player.say(coordinates.MESSAGES.PLACEMENT_COMPLETE);
     }
+
     /**
-     * Place blocks along a bezier curve with variable number of control points.
-     * Uses optimized curve generation algorithm for smooth results.
-     * @param startPoint Starting position of the curve
-     * @param controlPoints Array of control points that influence the curve shape
-     * @param endPoint Ending position of the curve
-     * @param blockType Block type to place
+     * ShapeOperation.Hollowを処理：空気で満たした形状を作成し、次に輪郭を作成
+     * すべての図形関数用の汎用ヘルパー
+     * @param block 配置するブロックタイプ
+     * @param operation 図形操作タイプ
+     * @param getPositions 図形の座標配列を返す関数
+     */
+    function handleShapeOperation(
+        block: number,
+        operation: ShapeOperation,
+        getPositions: (hollow: boolean) => Position[]
+    ): void {
+        if (operation === ShapeOperation.Hollow) {
+            // 空気で満たした形状を作成し、次に輪郭を作成
+            const filledPositions = getPositions(false);
+            batchPlaceBlocks(filledPositions, Block.Air);
+            const shellPositions = getPositions(true);
+            batchPlaceBlocks(shellPositions, block);
+        } else {
+            const hollow = operation === ShapeOperation.Outline;
+            const positions = getPositions(hollow);
+            batchPlaceBlocks(positions, block);
+        }
+    }
+    /**
+     * 可変数の制御点を持つベジェ曲線に沿ってブロックを配置
+     * 滑らかな結果のために最適化された曲線生成アルゴリズムを使用
+     * @param startPoint 曲線の開始位置
+     * @param controlPoints 曲線の形状に影響する制御点の配列
+     * @param endPoint 曲線の終了位置
+     * @param blockType 配置するブロックタイプ
      */
     //% weight=51
     //% blockId=minecraftVariableBezier
-    //% block="variable bezier of %block=minecraftBlock|from %startPoint=minecraftCreatePosition|to %endPoint=minecraftCreatePosition|with control points %controlPoints"
+    //% block="可変ベジェ %block=minecraftBlock|開始 %startPoint=minecraftCreatePosition|終了 %endPoint=minecraftCreatePosition|制御点 %controlPoints"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
     //% group="Lines and Curves"
@@ -59,14 +79,14 @@ namespace shapes {
     }
 
     /**
-     * Create a line between two points by placing blocks
-     * @param p0 Starting position of the line
-     * @param p1 Ending position of the line
-     * @param block Block type to place
+     * ブロックを配置して2点間に線を作成
+     * @param p0 線の開始位置
+     * @param p1 線の終了位置
+     * @param block 配置するブロックタイプ
      */
     //% weight=100
     //% blockId=minecraftOptimizedLine
-    //% block="optimized line of %block=minecraftBlock|from %p0=minecraftCreatePosition|to %p1=minecraftCreatePosition"
+    //% block="高速線引き %block=minecraftBlock|開始 %p0=minecraftCreatePosition|終了 %p1=minecraftCreatePosition"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
     //% group="Basic Shapes"
@@ -76,51 +96,43 @@ namespace shapes {
     }
 
     /**
-     * Create a circle by placing blocks
-     * @param center Center position of the circle
-     * @param radius Radius of the circle (1-50 blocks)
-     * @param orientation Circle orientation (X, Y, or Z axis)
-     * @param block Block type to place
-     * @param hollow Whether to create a hollow circle (outline only)
+     * ブロックを配置して円を作成
+     * @param center 円の中心位置
+     * @param radius 円の半径 (1-50ブロック)
+     * @param orientation 円の向き（X、Y、またはZ軸）
+     * @param block 配置するブロックタイプ
+     * @param hollow 中空の円を作成するか（輪郭のみ）
      */
     //% weight=95
     //% blockId=minecraftOptimizedCircle
-    //% block="optimized circle of %block=minecraftBlock|center %center=minecraftCreatePosition|radius %radius|around %orientation|%operation"
+    //% block="高速円描き %block=minecraftBlock|中心 %center=minecraftCreatePosition|半径 %radius|向き %orientation|%operation"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
     //% group="Basic Shapes"
     export function optimizedCircle(block: number, center: Position, radius: number, orientation: Axis, operation: ShapeOperation = ShapeOperation.Replace): void {
-        if (operation === ShapeOperation.Hollow) {
-            // Create filled circle with air, then outline
-            const positions = coordinates.getCirclePositions(center, radius, orientation, false);
-            batchPlaceBlocks(positions, Block.Air);
-            const outlinePositions = coordinates.getCirclePositions(center, radius, orientation, true);
-            batchPlaceBlocks(outlinePositions, block);
-        } else {
-            const hollow = operation === ShapeOperation.Outline;
-            const positions = coordinates.getCirclePositions(center, radius, orientation, hollow);
-            batchPlaceBlocks(positions, block);
-        }
+        handleShapeOperation(block, operation, (hollow) =>
+            coordinates.getCirclePositions(center, radius, orientation, hollow)
+        );
     }
 
     /**
-     * Create a sphere by placing blocks using optimized algorithm
-     * @param center Center position of the sphere
-     * @param radius Radius of the sphere (1-50 blocks)
-     * @param block Block type to place
-     * @param hollow Whether to create a hollow sphere (shell only)
-     * @param density Density factor for position sampling (0.1-1.0, default: 1.0)
+     * 最適化アルゴリズムを使用してブロックで球体を作成
+     * @param center 球体の中心位置
+     * @param radius 球体の半径 (1-50ブロック)
+     * @param block 配置するブロックタイプ
+     * @param hollow 中空球体を作成するか（殻のみ）
+     * @param density 位置サンプリングの密度係数 (0.1-1.0、デフォルト: 1.0)
      */
     //% weight=90
     //% blockId=minecraftOptimizedSphere
-    //% block="optimized sphere of %block=minecraftBlock|center %center=minecraftCreatePosition|radius %radius|%operation"
+    //% block="高速球作り %block=minecraftBlock|中心 %center=minecraftCreatePosition|半径 %radius|%operation"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
     //% group="3D Shapes Optimized"
     export function optimizedSphere(block: number, center: Position, radius: number, operation: ShapeOperation = ShapeOperation.Replace): void {
-        // Parameter validation
+        // パラメータ検証
         if (!center) {
             player.say(coordinates.MESSAGES.ERROR_INVALID_CENTER);
             return;
@@ -129,148 +141,111 @@ namespace shapes {
             player.say(coordinates.MESSAGES.ERROR_INVALID_RADIUS);
             return;
         }
-        
-        const density = 1.0; // Fixed density for standard compatibility
-        
-        if (operation === ShapeOperation.Hollow) {
-            // Create filled sphere with air, then shell
-            const filledPositions = coordinates.getSpherePositions(center, radius, false, density);
-            batchPlaceBlocks(filledPositions, Block.Air);
-            const shellPositions = coordinates.getSpherePositions(center, radius, true, density);
-            batchPlaceBlocks(shellPositions, block);
-        } else {
-            const hollow = operation === ShapeOperation.Outline;
-            const positions = coordinates.getSpherePositions(center, radius, hollow, density);
-            batchPlaceBlocks(positions, block);
-        }
+
+        const density = 1.0; // 標準互換性のための固定密度
+        handleShapeOperation(block, operation, (hollow) =>
+            coordinates.getSpherePositions(center, radius, hollow, density)
+        );
     }
 
     /**
-     * Create a cuboid (rectangular prism) by placing blocks
-     * @param corner1 First corner position of the cuboid
-     * @param corner2 Opposite corner position of the cuboid
-     * @param block Block type to place
-     * @param hollow Whether to create a hollow cuboid (shell only)
+     * ブロックを配置して直方体（矩形プリズム）を作成
+     * @param corner1 直方体の最初の角の位置
+     * @param corner2 反対側の角の位置
+     * @param block 配置するブロックタイプ
+     * @param hollow 中空直方体を作成するか（殻のみ）
      */
     //% weight=85
     //% blockId=minecraftCuboid
-    //% block="cuboid of %block=minecraftBlock|from %corner1=minecraftCreatePosition|to %corner2=minecraftCreatePosition|%operation"
+    //% block="直方体 %block=minecraftBlock|角1 %corner1=minecraftCreatePosition|角2 %corner2=minecraftCreatePosition|%operation"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
     //% group="3D Shapes Basic"
     export function cuboid(block: number, corner1: Position, corner2: Position, operation: ShapeOperation = ShapeOperation.Replace): void {
-        if (operation === ShapeOperation.Hollow) {
-            const filledPositions = coordinates.getCuboidPositions(corner1, corner2, false);
-            batchPlaceBlocks(filledPositions, Block.Air);
-            const shellPositions = coordinates.getCuboidPositions(corner1, corner2, true);
-            batchPlaceBlocks(shellPositions, block);
-        } else {
-            const hollow = operation === ShapeOperation.Outline;
-            const positions = coordinates.getCuboidPositions(corner1, corner2, hollow);
-            batchPlaceBlocks(positions, block);
-        }
+        handleShapeOperation(block, operation, (hollow) =>
+            coordinates.getCuboidPositions(corner1, corner2, hollow)
+        );
     }
 
     /**
-     * Create a cylinder using optimized building algorithm
-     * @param center Center position of the cylinder base
-     * @param radius Radius of the cylinder (1-50 blocks)
-     * @param height Height of the cylinder (1-100 blocks)
-     * @param block Block type to place
-     * @param hollow Whether to create a hollow cylinder (default: false)
+     * 最適化された建築アルゴリズムを使用して円柱を作成
+     * @param center 円柱の底面中心位置
+     * @param radius 円柱の半径 (1-50ブロック)
+     * @param height 円柱の高さ (1-100ブロック)
+     * @param block 配置するブロックタイプ
+     * @param hollow 中空円柱を作成するか (デフォルト: false)
      */
     //% weight=80
     //% blockId=minecraftCylinder
-    //% block="cylinder of %block=minecraftBlock|center %center=minecraftCreatePosition|radius %radius|height %height|%operation"
+    //% block="円柱 %block=minecraftBlock|中心 %center=minecraftCreatePosition|半径 %radius|高さ %height|%operation"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
     //% height.min=1 height.max=300 height.defl=10
     //% group="3D Shapes Optimized"
     export function cylinder(block: number, center: Position, radius: number, height: number, operation: ShapeOperation = ShapeOperation.Replace): void {
-        if (operation === ShapeOperation.Hollow) {
-            const filledPositions = coordinates.getCylinderPositions(center, radius, height, false);
-            batchPlaceBlocks(filledPositions, Block.Air);
-            const shellPositions = coordinates.getCylinderPositions(center, radius, height, true);
-            batchPlaceBlocks(shellPositions, block);
-        } else {
-            const hollow = operation === ShapeOperation.Outline;
-            const positions = coordinates.getCylinderPositions(center, radius, height, hollow);
-            batchPlaceBlocks(positions, block);
-        }
+        handleShapeOperation(block, operation, (hollow) =>
+            coordinates.getCylinderPositions(center, radius, height, hollow)
+        );
     }
 
     /**
-     * Create a cone by placing blocks
-     * @param center Center position of the cone base
-     * @param radius Radius of the cone base (1-50 blocks)
-     * @param height Height of the cone (1-100 blocks)
-     * @param block Block type to place
-     * @param hollow Whether to create a hollow cone (default: false)
+     * ブロックを配置して円錐を作成
+     * @param center 円錐の底面中心位置
+     * @param radius 円錐の底面半径 (1-50ブロック)
+     * @param height 円錐の高さ (1-100ブロック)
+     * @param block 配置するブロックタイプ
+     * @param hollow 中空円錐を作成するか (デフォルト: false)
      */
     //% weight=75
     //% blockId=minecraftCone
-    //% block="cone of %block=minecraftBlock|center %center=minecraftCreatePosition|radius %radius|height %height|%operation"
+    //% block="円錐 %block=minecraftBlock|中心 %center=minecraftCreatePosition|半径 %radius|高さ %height|%operation"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
     //% height.min=1 height.max=300 height.defl=10
     //% group="3D Shapes Basic"
     export function cone(block: number, center: Position, radius: number, height: number, operation: ShapeOperation = ShapeOperation.Replace): void {
-        if (operation === ShapeOperation.Hollow) {
-            const filledPositions = coordinates.getConePositions(center, radius, height, false);
-            batchPlaceBlocks(filledPositions, Block.Air);
-            const shellPositions = coordinates.getConePositions(center, radius, height, true);
-            batchPlaceBlocks(shellPositions, block);
-        } else {
-            const hollow = operation === ShapeOperation.Outline;
-            const positions = coordinates.getConePositions(center, radius, height, hollow);
-            batchPlaceBlocks(positions, block);
-        }
+        handleShapeOperation(block, operation, (hollow) =>
+            coordinates.getConePositions(center, radius, height, hollow)
+        );
     }
 
     /**
-     * Create a torus (donut shape) by placing blocks
-     * @param center Center position of the torus
-     * @param majorRadius Major radius (distance from center to tube center, 3-50 blocks)
-     * @param minorRadius Minor radius (tube thickness, 1-20 blocks)
-     * @param block Block type to place
-     * @param hollow Whether to create a hollow torus (default: false)
+     * ブロックを配置してトーラス（ドーナツ形）を作成
+     * @param center トーラスの中心位置
+     * @param majorRadius 主半径（中心からチューブ中心までの距離、3-50ブロック）
+     * @param minorRadius 副半径（チューブの太さ、1-20ブロック）
+     * @param block 配置するブロックタイプ
+     * @param hollow 中空トーラスを作成するか (デフォルト: false)
      */
     //% weight=70
     //% blockId=minecraftTorus
-    //% block="torus of %block=minecraftBlock|center %center=minecraftCreatePosition|major radius %majorRadius|minor radius %minorRadius|%operation"
+    //% block="トーラス %block=minecraftBlock|中心 %center=minecraftCreatePosition|主半径 %majorRadius|副半径 %minorRadius|%operation"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
     //% majorRadius.min=3 majorRadius.max=200 majorRadius.defl=8
     //% minorRadius.min=1 minorRadius.max=100 minorRadius.defl=3
     //% group="Complex Shapes"
     export function torus(block: number, center: Position, majorRadius: number, minorRadius: number, operation: ShapeOperation = ShapeOperation.Replace): void {
-        if (operation === ShapeOperation.Hollow) {
-            const filledPositions = coordinates.getTorusPositions(center, majorRadius, minorRadius, false);
-            batchPlaceBlocks(filledPositions, Block.Air);
-            const shellPositions = coordinates.getTorusPositions(center, majorRadius, minorRadius, true);
-            batchPlaceBlocks(shellPositions, block);
-        } else {
-            const hollow = operation === ShapeOperation.Outline;
-            const positions = coordinates.getTorusPositions(center, majorRadius, minorRadius, hollow);
-            batchPlaceBlocks(positions, block);
-        }
+        handleShapeOperation(block, operation, (hollow) =>
+            coordinates.getTorusPositions(center, majorRadius, minorRadius, hollow)
+        );
     }
 
 
     /**
-     * Create an ellipsoid using optimized building algorithm
-     * @param center Center position of the ellipsoid
-     * @param radiusX Radius along X axis (1-50 blocks)
-     * @param radiusY Radius along Y axis (1-50 blocks)
-     * @param radiusZ Radius along Z axis (1-50 blocks)
-     * @param block Block type to place
-     * @param hollow Whether to create a hollow ellipsoid (default: false)
+     * 最適化された建築アルゴリズムを使用して楕円体を作成
+     * @param center 楕円体の中心位置
+     * @param radiusX X軸方向の半径 (1-50ブロック)
+     * @param radiusY Y軸方向の半径 (1-50ブロック)
+     * @param radiusZ Z軸方向の半径 (1-50ブロック)
+     * @param block 配置するブロックタイプ
+     * @param hollow 中空楕円体を作成するか (デフォルト: false)
      */
     //% weight=65
     //% blockId=minecraftEllipsoid
-    //% block="ellipsoid of %block=minecraftBlock|center %center=minecraftCreatePosition|X radius %radiusX|Y radius %radiusY|Z radius %radiusZ|%operation"
+    //% block="楕円体 %block=minecraftBlock|中心 %center=minecraftCreatePosition|X半径 %radiusX|Y半径 %radiusY|Z半径 %radiusZ|%operation"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
     //% radiusX.min=1 radiusX.max=200 radiusX.defl=5
@@ -278,30 +253,23 @@ namespace shapes {
     //% radiusZ.min=1 radiusZ.max=200 radiusZ.defl=7
     //% group="3D Shapes Optimized"
     export function ellipsoid(block: number, center: Position, radiusX: number, radiusY: number, radiusZ: number, operation: ShapeOperation = ShapeOperation.Replace): void {
-        if (operation === ShapeOperation.Hollow) {
-            const filledPositions = coordinates.getEllipsoidPositions(center, radiusX, radiusY, radiusZ, false);
-            batchPlaceBlocks(filledPositions, Block.Air);
-            const shellPositions = coordinates.getEllipsoidPositions(center, radiusX, radiusY, radiusZ, true);
-            batchPlaceBlocks(shellPositions, block);
-        } else {
-            const hollow = operation === ShapeOperation.Outline;
-            const positions = coordinates.getEllipsoidPositions(center, radiusX, radiusY, radiusZ, hollow);
-            batchPlaceBlocks(positions, block);
-        }
+        handleShapeOperation(block, operation, (hollow) =>
+            coordinates.getEllipsoidPositions(center, radiusX, radiusY, radiusZ, hollow)
+        );
     }
 
     /**
-     * Create a helix (spiral) by placing blocks
-     * @param center Center position of the helix base
-     * @param radius Radius of the helix (1-50 blocks)
-     * @param height Total height of the helix (2-100 blocks)
-     * @param turns Number of complete turns (0.5-20 rotations)
-     * @param block Block type to place
-     * @param clockwise Whether to rotate clockwise (default: true)
+     * ブロックを配置してヘリックス（螺旋）を作成
+     * @param center ヘリックスの底面中心位置
+     * @param radius ヘリックスの半径 (1-50ブロック)
+     * @param height ヘリックスの合計高さ (2-100ブロック)
+     * @param turns 完全回転数 (0.5-20回転)
+     * @param block 配置するブロックタイプ
+     * @param clockwise 時計回りに回転するか (デフォルト: true)
      */
     //% weight=60
     //% blockId=minecraftHelix
-    //% block="helix of %block=minecraftBlock|center %center=minecraftCreatePosition|radius %radius|height %height|turns %turns||clockwise %clockwise"
+    //% block="螺旋 %block=minecraftBlock|中心 %center=minecraftCreatePosition|半径 %radius|高さ %height|回転数 %turns||時計回り %clockwise"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
     //% radius.min=1 radius.max=200 radius.defl=5
@@ -316,46 +284,39 @@ namespace shapes {
     }
 
     /**
-     * Create a paraboloid (satellite dish shape) by placing blocks
-     * @param center Center position of the paraboloid base
-     * @param radius Maximum radius at the top (2-50 blocks)
-     * @param height Height of the paraboloid (1-50 blocks)
-     * @param block Block type to place
-     * @param hollow Whether to create a hollow paraboloid (default: false)
+     * ブロックを配置してパラボロイド（衛星アンテナ形）を作成
+     * @param center パラボロイドの底面中心位置
+     * @param radius 上部の最大半径 (2-50ブロック)
+     * @param height パラボロイドの高さ (1-50ブロック)
+     * @param block 配置するブロックタイプ
+     * @param hollow 中空パラボロイドを作成するか (デフォルト: false)
      */
     //% weight=55
     //% blockId=minecraftParaboloid
-    //% block="paraboloid of %block=minecraftBlock|center %center=minecraftCreatePosition|radius %radius|height %height|%operation"
+    //% block="パラボロイド %block=minecraftBlock|中心 %center=minecraftCreatePosition|半径 %radius|高さ %height|%operation"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
     //% radius.min=2 radius.max=200 radius.defl=8
     //% height.min=1 height.max=300 height.defl=10
     //% group="Complex Shapes"
     export function paraboloid(block: number, center: Position, radius: number, height: number, operation: ShapeOperation = ShapeOperation.Replace): void {
-        if (operation === ShapeOperation.Hollow) {
-            const filledPositions = coordinates.getParaboloidPositions(center, radius, height, false);
-            batchPlaceBlocks(filledPositions, Block.Air);
-            const shellPositions = coordinates.getParaboloidPositions(center, radius, height, true);
-            batchPlaceBlocks(shellPositions, block);
-        } else {
-            const hollow = operation === ShapeOperation.Outline;
-            const positions = coordinates.getParaboloidPositions(center, radius, height, hollow);
-            batchPlaceBlocks(positions, block);
-        }
+        handleShapeOperation(block, operation, (hollow) =>
+            coordinates.getParaboloidPositions(center, radius, height, hollow)
+        );
     }
 
     /**
-     * Create a hyperboloid (cooling tower shape) by placing blocks
-     * @param center Center position of the hyperboloid
-     * @param baseRadius Radius at the base (3-50 blocks)
-     * @param waistRadius Radius at the narrowest point (1-30 blocks)
-     * @param height Total height of the hyperboloid (4-100 blocks)
-     * @param block Block type to place
-     * @param hollow Whether to create a hollow hyperboloid (default: false)
+     * ブロックを配置して双曲面（冷却塔形）を作成
+     * @param center 双曲面の中心位置
+     * @param baseRadius 底面の半径 (3-50ブロック)
+     * @param waistRadius 最も狭い部分の半径 (1-30ブロック)
+     * @param height 双曲面の合計高さ (4-100ブロック)
+     * @param block 配置するブロックタイプ
+     * @param hollow 中空双曲面を作成するか (デフォルト: false)
      */
     //% weight=50
     //% blockId=minecraftHyperboloid
-    //% block="hyperboloid of %block=minecraftBlock|center %center=minecraftCreatePosition|base radius %baseRadius|waist radius %waistRadius|height %height|%operation"
+    //% block="双曲面 %block=minecraftBlock|中心 %center=minecraftCreatePosition|底面半径 %baseRadius|くびれ半径 %waistRadius|高さ %height|%operation"
     //% block.shadow=minecraftBlock
     //% blockExternalInputs=1
     //% baseRadius.min=3 baseRadius.max=200 baseRadius.defl=10
@@ -363,16 +324,9 @@ namespace shapes {
     //% height.min=4 height.max=300 height.defl=20
     //% group="Complex Shapes"
     export function hyperboloid(block: number, center: Position, baseRadius: number, waistRadius: number, height: number, operation: ShapeOperation = ShapeOperation.Replace): void {
-        if (operation === ShapeOperation.Hollow) {
-            const filledPositions = coordinates.getHyperboloidPositions(center, baseRadius, waistRadius, height, false);
-            batchPlaceBlocks(filledPositions, Block.Air);
-            const shellPositions = coordinates.getHyperboloidPositions(center, baseRadius, waistRadius, height, true);
-            batchPlaceBlocks(shellPositions, block);
-        } else {
-            const hollow = operation === ShapeOperation.Outline;
-            const positions = coordinates.getHyperboloidPositions(center, baseRadius, waistRadius, height, hollow);
-            batchPlaceBlocks(positions, block);
-        }
+        handleShapeOperation(block, operation, (hollow) =>
+            coordinates.getHyperboloidPositions(center, baseRadius, waistRadius, height, hollow)
+        );
     }
 
 }
